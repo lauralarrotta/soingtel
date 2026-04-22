@@ -71,8 +71,8 @@ export default function DashboardSidebar({
           onClick={() => setIsLocked(!isLocked)}
           className={cn(
             "rounded-lg p-2 transition-colors",
-            "hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            isLocked ? "bg-accent/50 text-primary" : "text-muted-foreground"
+            "hover:bg-cyan-50 hover:text-cyan-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50",
+            isLocked ? "bg-cyan-100 text-cyan-600" : "text-muted-foreground"
           )}
           aria-label={isLocked ? "Desbloquear menú" : "Fijar menú abierto"}
           title={isLocked ? "Desfijar menú" : "Fijar menú abierto"}
@@ -105,8 +105,8 @@ export default function DashboardSidebar({
                       ? "flex justify-center p-3"
                       : "flex items-center gap-3 px-3 py-2.5",
                     isActive
-                      ? "bg-gradient-to-r from-cyan-500/20 to-transparent text-cyan-400 shadow-lg shadow-cyan-500/10"
-                      : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200",
+                      ? "bg-gradient-to-r from-cyan-500/20 to-transparent text-cyan-600 dark:text-cyan-400 shadow-lg shadow-cyan-500/10"
+                      : "text-slate-600 dark:text-slate-400 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-400",
                   )}
                 >
                   {/* Active indicator */}

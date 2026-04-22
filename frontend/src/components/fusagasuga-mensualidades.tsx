@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "./ui/table";
 import { Badge } from "./ui/badge";
+import { Card, CardContent } from "./ui/card";
 import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
 import { NuevoClienteModal } from "./nuevo-cliente-modal";
 import { HistorialFacturasModal } from "./historial-facturas-modal";
@@ -841,57 +842,73 @@ export function FusagasugaMensualidades({
       />
 
       {/* Tarjetas Principales de Control */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <Alert
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        <Card
           onClick={() => setActiveCardFilter("todos")}
-          className={`cursor-pointer transition-all h-full ${activeCardFilter === "todos" ? "bg-blue-50 border-blue-400 [&>svg]:text-blue-600" : "hover:border-blue-300 hover:bg-blue-50/50"}`}
+          className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "todos" ? "ring-2 ring-cyan-500" : "hover:shadow-md"}`}
         >
-          <BarChart3 className="h-4 w-4" />
-          <AlertTitle className="text-sm font-semibold tracking-tight text-muted-foreground uppercase">Total Activos</AlertTitle>
-          <AlertDescription className="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">
-            {estadisticas.total}
-          </AlertDescription>
-        </Alert>
+          <div className="h-1 bg-gradient-to-r from-cyan-500 to-cyan-400" />
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <BarChart3 className="h-5 w-5 text-cyan-500" />
+              <Badge variant="outline" className="text-[10px] bg-cyan-50 text-cyan-600 border-cyan-200">Activos</Badge>
+            </div>
+            <div className="text-3xl font-bold">{estadisticas.total}</div>
+            <p className="text-xs text-muted-foreground mt-1">Total Activos</p>
+          </CardContent>
+        </Card>
 
-        <Alert
+        <Card
           onClick={() => setActiveCardFilter("ppc")}
-          className={`cursor-pointer transition-all h-full ${activeCardFilter === "ppc" ? "bg-orange-50 border-orange-400 [&>svg]:text-orange-600" : "hover:border-orange-300 hover:bg-orange-50/50"}`}
+          className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "ppc" ? "ring-2 ring-orange-500" : "hover:shadow-md"}`}
         >
-          <PauseCircle className="h-4 w-4" />
-          <AlertTitle className="text-sm font-semibold tracking-tight text-muted-foreground uppercase">Pausados (PPC)</AlertTitle>
-          <AlertDescription className="text-2xl font-bold text-orange-600 mt-1">
-            {estadisticas.ppc}
-          </AlertDescription>
-        </Alert>
+          <div className="h-1 bg-gradient-to-r from-orange-500 to-orange-400" />
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <PauseCircle className="h-5 w-5 text-orange-500" />
+              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-600 border-orange-200">PPC</Badge>
+            </div>
+            <div className="text-3xl font-bold text-orange-600">{estadisticas.ppc}</div>
+            <p className="text-xs text-muted-foreground mt-1">Pausados</p>
+          </CardContent>
+        </Card>
 
-        <Alert
+        <Card
           onClick={() => setActiveCardFilter("danadas")}
-          className={`cursor-pointer transition-all h-full ${activeCardFilter === "danadas" ? "bg-slate-100 border-slate-400 [&>svg]:text-slate-600" : "hover:border-slate-300 hover:bg-slate-50/50"}`}
+          className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "danadas" ? "ring-2 ring-slate-500" : "hover:shadow-md"}`}
         >
-          <Wrench className="h-4 w-4" />
-          <AlertTitle className="text-sm font-semibold tracking-tight text-muted-foreground uppercase">Kits En Daño</AlertTitle>
-          <AlertDescription className="text-2xl font-bold text-slate-700 mt-1">
-            {estadisticas.danadas}
-          </AlertDescription>
-        </Alert>
+          <div className="h-1 bg-gradient-to-r from-slate-500 to-slate-400" />
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <Wrench className="h-5 w-5 text-orange-500" />
+              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-600 border-orange-200">Daño</Badge>
+            </div>
+            <div className="text-3xl font-bold text-orange-600">{estadisticas.danadas}</div>
+            <p className="text-xs text-muted-foreground mt-1">Kits en Daño</p>
+          </CardContent>
+        </Card>
 
-        <Alert
+        <Card
           onClick={() => setActiveCardFilter("garantias")}
-          className={`cursor-pointer transition-all h-full ${activeCardFilter === "garantias" ? "bg-cyan-50 border-cyan-400 [&>svg]:text-cyan-600" : "hover:border-cyan-300 hover:bg-cyan-50/50"}`}
+          className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "garantias" ? "ring-2 ring-cyan-500" : "hover:shadow-md"}`}
         >
-          <ShieldCheck className="h-4 w-4" />
-          <AlertTitle className="text-sm font-semibold tracking-tight text-muted-foreground uppercase">Kits en Garantía</AlertTitle>
-          <AlertDescription className="text-2xl font-bold text-cyan-700 mt-1">
-            {estadisticas.garantias}
-          </AlertDescription>
-        </Alert>
+          <div className="h-1 bg-gradient-to-r from-cyan-500 to-cyan-400" />
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <ShieldCheck className="h-5 w-5 text-cyan-500" />
+              <Badge variant="outline" className="text-[10px] bg-cyan-50 text-cyan-600 border-cyan-200">Garantía</Badge>
+            </div>
+            <div className="text-3xl font-bold text-cyan-600">{estadisticas.garantias}</div>
+            <p className="text-xs text-muted-foreground mt-1">Kits en Garantía</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="bg-card rounded-lg border p-6">
-        <div className="flex flex-col gap-4 mb-6">
-          <div className="flex items-center justify-between">
+      <div className="bg-[#0A1628]/60 backdrop-blur-xl rounded-xl border border-cyan-500/20 shadow-xl shadow-cyan-500/5 overflow-hidden">
+        <div className="p-6 pb-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <h2>
+              <h2 className="text-lg font-bold text-white">
                 {activeCardFilter === "ppc"
                   ? "Soporte VIP / PPC"
                   : activeCardFilter === "danadas"
@@ -905,7 +922,7 @@ export function FusagasugaMensualidades({
               {loadingClientes && (
                 <Badge
                   variant="outline"
-                  className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                  className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
                 >
                   <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
                   Cargando...
@@ -1110,12 +1127,12 @@ export function FusagasugaMensualidades({
                   }).map((cliente) => (
                     <TableRow
                       key={cliente.kit}
-                      className={`cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${cliente.estado_pago === "en_dano"
-                          ? "bg-red-50 dark:bg-red-950/20 opacity-90"
+                      className={`cursor-pointer hover:bg-cyan-50 dark:hover:bg-cyan-500/10 transition-colors ${cliente.estado_pago === "en_dano"
+                          ? "bg-red-50 dark:bg-red-950/20"
                           : cliente.estado_pago === "garantia"
-                            ? "bg-cyan-50 dark:bg-cyan-950/20 opacity-90"
+                            ? "bg-cyan-50 dark:bg-cyan-950/20"
                             : cliente.estado_pago === "suspendido"
-                              ? "bg-slate-100 dark:bg-slate-800/50 opacity-80"
+                              ? "bg-cyan-50/30 dark:bg-cyan-500/10"
                               : ""
                         }`}
                       onClick={() => handleVerDetalles(cliente)}
@@ -1333,7 +1350,7 @@ export function FusagasugaMensualidades({
                                     }
                                   }
                                 }}
-                                className="border-red-900 hover:bg-slate-900 hover:text-red-500 text-red-900"
+                                className="border-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 text-red-600"
                               >
                                 <AlertCircle className="h-4 w-4 mr-2" />
                                 En Daño

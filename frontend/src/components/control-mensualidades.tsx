@@ -712,10 +712,10 @@ const handleSaveClienteCompleto = async (
           <div className="h-1 bg-gradient-to-r from-slate-500 to-slate-400" />
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
-              <Wrench className="h-5 w-5 text-slate-500" />
-              <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-600 border-slate-200">Daño</Badge>
+              <Wrench className="h-5 w-5 text-orange-500" />
+              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-600 border-orange-200">Daño</Badge>
             </div>
-            <div className="text-3xl font-bold text-slate-600">{estadisticas.danadas}</div>
+            <div className="text-3xl font-bold text-orange-600">{estadisticas.danadas}</div>
             <p className="text-xs text-muted-foreground mt-1">Kits en Daño</p>
           </CardContent>
         </Card>
@@ -1194,7 +1194,7 @@ const handleSaveClienteCompleto = async (
                                     }
                                   }
                                 }}
-                                className="border-red-900 hover:bg-slate-900 hover:text-red-500 text-red-900"
+                                className="border-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 text-red-600"
                               >
                                 <AlertCircle className="h-4 w-4 mr-2" />
                                 En Daño

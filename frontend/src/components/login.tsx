@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { ShieldCheck, Eye, EyeOff, Lock, User, Zap, Cpu } from "lucide-react";
+import { ShieldCheck, Eye, EyeOff, Lock, User, Zap, Cpu, Globe } from "lucide-react";
 
 interface LoginProps {
   onLogin: (userType: string) => void;
@@ -101,7 +101,7 @@ export function Login({ onLogin }: LoginProps) {
             className="flex items-center gap-3"
           >
             <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
-              <Zap className="h-7 w-7 text-white" />
+              <Globe className="h-7 w-7 text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight neon-text-cyan">Soingtel</h1>
@@ -147,7 +147,7 @@ export function Login({ onLogin }: LoginProps) {
               {/* HEADER */}
               <div className="mb-8 flex items-center gap-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30 glow-cyan">
-                  <ShieldCheck className="h-7 w-7 text-white" />
+                  <Globe className="h-7 w-7 text-white" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold tracking-tight text-white">

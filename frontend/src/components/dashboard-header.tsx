@@ -124,8 +124,8 @@ export function DashboardHeader({
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
-              <span className="text-white font-bold text-lg">S</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 via-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
+              <Globe className="h-6 w-6 text-white" />
             </div>
             <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl blur opacity-30 -z-10" />
           </div>
