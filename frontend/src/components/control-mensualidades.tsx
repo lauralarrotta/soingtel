@@ -149,7 +149,8 @@ const crearCliente = async (cliente: Cliente) => {
 
   useEffect(() => {
     cargarEstadisticas();
-  }, [clientes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const handleReload = () => {
@@ -712,10 +713,10 @@ const handleSaveClienteCompleto = async (
           <div className="h-1 bg-gradient-to-r from-slate-500 to-slate-400" />
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
-              <Wrench className="h-5 w-5 text-slate-500" />
-              <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-600 border-slate-200">Daño</Badge>
+              <Wrench className="h-5 w-5 text-orange-500" />
+              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-600 border-orange-200">Daño</Badge>
             </div>
-            <div className="text-3xl font-bold text-slate-600">{estadisticas.danadas}</div>
+            <div className="text-3xl font-bold text-orange-600">{estadisticas.danadas}</div>
             <p className="text-xs text-muted-foreground mt-1">Kits en Daño</p>
           </CardContent>
         </Card>
@@ -736,11 +737,11 @@ const handleSaveClienteCompleto = async (
         </Card>
       </div>
 
-      <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+      <div className=" backdrop-blur-xl rounded-xl border border-cyan-500/20 shadow-xl shadow-cyan-500/5 overflow-hidden">
         <div className="p-6 pb-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-lg font-bold text-cyan-600 dark:text-white">
                 {activeCardFilter === "ppc"
                   ? "Soporte VIP / PPC"
                   : activeCardFilter === "danadas"
@@ -754,7 +755,7 @@ const handleSaveClienteCompleto = async (
               {loadingClientes && (
                 <Badge
                   variant="outline"
-                  className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                  className="bg-cyan-50/50 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border-cyan-200/50 dark:border-cyan-500/30"
                 >
                   <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
                   Cargando...
@@ -763,7 +764,7 @@ const handleSaveClienteCompleto = async (
               {!serverAvailable && !loadingClientes && (
                 <Badge
                   variant="outline"
-                  className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800"
+                  className="bg-yellow-50/50 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-300 border-yellow-200/50 dark:border-yellow-500/30"
                 >
                   💾 Offline
                 </Badge>
@@ -771,7 +772,7 @@ const handleSaveClienteCompleto = async (
               {serverAvailable && !loadingClientes && (
                 <Badge
                   variant="outline"
-                  className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800"
+                  className="bg-green-50/50 dark:bg-green-500/20 text-green-600 dark:text-green-300 border-green-200/50 dark:border-green-500/30"
                 >
                   ✓ Sincronizado
                 </Badge>
@@ -852,68 +853,71 @@ const handleSaveClienteCompleto = async (
             </div>
           )}
 
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre, cuenta o email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <div className="bg-gradient-to-r from-cyan-50/80 to-blue-50/80 dark:from-[#0F2744]/80 dark:to-[#0A1628]/80 rounded-xl p-4 mb-6 border border-cyan-100/50 dark:border-cyan-500/20">
+            <div className="flex flex-col md:flex-row gap-4 items-end">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                <Input
+                  placeholder="Buscar por nombre, cuenta o email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-white/80 dark:bg-[#0A1628]/80 border-cyan-200/50 dark:border-cyan-500/30 focus:border-cyan-500 focus:ring-cyan-500/20"
+                />
+              </div>
+
+              <Select value={filterEstado} onValueChange={setFilterEstado}>
+                <SelectTrigger className="w-full md:w-[200px] bg-white/80 dark:bg-[#0A1628]/80 border-cyan-200/50 dark:border-cyan-500/30 focus:ring-cyan-500/20">
+                  <SelectValue placeholder="Estado de pago" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-[#0A1628] border-cyan-200/50 dark:border-cyan-500/30">
+                  <SelectItem value="todos">Todos los estados</SelectItem>
+                  <SelectItem value="confirmado">Confirmado</SelectItem>
+                  <SelectItem value="pendiente">Pendiente</SelectItem>
+                  <SelectItem value="mora">Mora</SelectItem>
+                  <SelectItem value="suspendido">Suspendido</SelectItem>
+                  <SelectItem value="en_dano">En Daño</SelectItem>
+                  <SelectItem value="garantia">En Garantía</SelectItem>
+                  <SelectItem value="sin_factura">Sin Facturas</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterCorte} onValueChange={setFilterCorte}>
+                <SelectTrigger className="w-full md:w-[200px] bg-white/80 dark:bg-[#0A1628]/80 border-cyan-200/50 dark:border-cyan-500/30 focus:ring-cyan-500/20">
+                  <SelectValue placeholder="Fecha de corte" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-[#0A1628] border-cyan-200/50 dark:border-cyan-500/30">
+                  <SelectItem value="todos">Todas las fechas</SelectItem>
+                  <SelectItem value="1-10">Días 1-10</SelectItem>
+                  <SelectItem value="11-20">Días 11-20</SelectItem>
+                  <SelectItem value="21-31">Días 21-31</SelectItem>
+                </SelectContent>
+              </Select>
+              {(filterEstado !== "todos" ||
+                filterCorte !== "todos" ||
+                showOnlyMora) && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setFilterEstado("todos");
+                      setFilterCorte("todos");
+                      setShowOnlyMora(false);
+                      toast.info("Filtros limpiados");
+                    }}
+                    className="bg-white/80 dark:bg-[#0A1628]/80 border-cyan-200/50 dark:border-cyan-500/30 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-500/10"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Limpiar filtros
+                  </Button>
+                )}
             </div>
-
-            <Select value={filterEstado} onValueChange={setFilterEstado}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Estado de pago" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los estados</SelectItem>
-                <SelectItem value="confirmado">Confirmado</SelectItem>
-                <SelectItem value="pendiente">Pendiente</SelectItem>
-                <SelectItem value="mora">Mora</SelectItem>
-                <SelectItem value="suspendido">Suspendido</SelectItem>
-                <SelectItem value="en_dano">En Daño</SelectItem>
-                <SelectItem value="garantia">En Garantía</SelectItem>
-                <SelectItem value="sin_factura">Sin Facturas</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={filterCorte} onValueChange={setFilterCorte}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Fecha de corte" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todas las fechas</SelectItem>
-                <SelectItem value="1-10">Días 1-10</SelectItem>
-                <SelectItem value="11-20">Días 11-20</SelectItem>
-                <SelectItem value="21-31">Días 21-31</SelectItem>
-              </SelectContent>
-            </Select>
-            {(filterEstado !== "todos" ||
-              filterCorte !== "todos" ||
-              showOnlyMora) && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setFilterEstado("todos");
-                    setFilterCorte("todos");
-                    setShowOnlyMora(false);
-                    toast.info("Filtros limpiados");
-                  }}
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Limpiar filtros
-                </Button>
-              )}
           </div>
         </div>
 
-        <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="rounded-xl border bg-white dark:bg-[#0A1628]/60 overflow-hidden shadow-sm">
           {errorClientes && <p className="text-red-500 p-4">{errorClientes}</p>}
           <Table className="text-sm">
             <TableHeader>
-              <TableRow className="bg-muted/50 border-b hover:bg-muted/50">
+              <TableRow className="bg-cyan-50/50 dark:bg-[#0F2744]/50 border-b">
                 <TableHead className="px-4 py-3 font-semibold text-muted-foreground">Kit</TableHead>
                 <TableHead className="px-4 py-3 font-semibold text-muted-foreground">Cliente</TableHead>
                 <TableHead className="px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">Cuenta Starlink</TableHead>
@@ -1194,7 +1198,7 @@ const handleSaveClienteCompleto = async (
                                     }
                                   }
                                 }}
-                                className="border-red-900 hover:bg-slate-900 hover:text-red-500 text-red-900"
+                                className="border-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 text-red-600"
                               >
                                 <AlertCircle className="h-4 w-4 mr-2" />
                                 En Daño

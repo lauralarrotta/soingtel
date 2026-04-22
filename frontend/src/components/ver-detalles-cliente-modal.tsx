@@ -86,7 +86,7 @@ export function VerDetallesClienteModal({
                 Información General
               </h3>
 
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-4 bg-muted/50 dark:bg-[#0F2744]/50 rounded-lg p-4">
                 <div>
                   <CampoEditable
                     label="KIT"
@@ -186,7 +186,7 @@ export function VerDetallesClienteModal({
                 Información Financiera
               </h3>
 
-              <div className="grid grid-cols-3 gap-4 bg-slate-50 rounded-lg p-4">
+              <div className="grid grid-cols-3 gap-4 bg-muted/50 dark:bg-[#0F2744]/50 rounded-lg p-4">
                 <CampoEditable
                   label="COSTO PLAN"
                   campo="costo_plan"
@@ -221,7 +221,7 @@ export function VerDetallesClienteModal({
                 Fechas y Cortes
               </h3>
 
-              <div className="grid grid-cols-3 gap-4 bg-slate-50 rounded-lg p-4">
+              <div className="grid grid-cols-3 gap-4 bg-muted/50 dark:bg-[#0F2744]/50 rounded-lg p-4">
                 <CampoEditable
                   label="CORTE (DÍA DEL MES)"
                   campo="corte"
@@ -285,7 +285,7 @@ export function VerDetallesClienteModal({
                     {cliente.facturas.map((factura: any, index: number) => (
                       <div
                         key={index}
-                        className="bg-slate-50 rounded-lg p-3 flex items-center justify-between"
+                        className="bg-muted/50 dark:bg-[#0F2744]/50 rounded-lg p-3 flex items-center justify-between"
                       >
                         <div>
                           <p className="font-medium">{factura.numero}</p>

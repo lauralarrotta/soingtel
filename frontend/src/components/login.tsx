@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { ShieldCheck, Eye, EyeOff, Lock, User } from "lucide-react";
+import { ShieldCheck, Eye, EyeOff, Lock, User, Zap, Cpu, Globe } from "lucide-react";
 
 interface LoginProps {
   onLogin: (userType: string) => void;
@@ -16,12 +16,12 @@ export function Login({ onLogin }: LoginProps) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // 🔥 partículas optimizadas (no se recalculan en cada render)
   const particles = useMemo(
     () =>
-      [...Array(15)].map(() => ({
+      [...Array(20)].map(() => ({
         left: `${Math.random() * 100}%`,
-        delay: Math.random() * 3,
+        delay: Math.random() * 5,
+        size: Math.random() * 3 + 1,
       })),
     []
   );
@@ -39,170 +39,237 @@ export function Login({ onLogin }: LoginProps) {
       } else if (username === "admin" && password === "admin123") {
         onLogin("admin");
       } else {
-        setError("Credenciales incorrectas. Intenta nuevamente.");
+        setError("Acceso denegado. Credenciales inválidas.");
       }
       setLoading(false);
     }, 800);
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-black text-white selection:bg-blue-500/30 selection:text-white">
+    <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-[#030712] text-slate-100 selection:bg-cyan-500/30 selection:text-white relative">
 
-      {/* 🎬 VIDEO */}
-      <div className="relative h-[30%] md:h-full md:w-1/2">
+      {/* Grid background */}
+      <div className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(6, 182, 212, 0.15) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(6, 182, 212, 0.15) 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px'
+        }}
+      />
+
+      {/* Gradient overlays */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/20 rounded-full blur-[120px]" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-[120px]" />
+
+      {/* VIDEO */}
+      <div className="relative h-[25%] md:h-full md:w-1/2">
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-80"
+          className="absolute inset-0 w-full h-full object-cover opacity-40"
         >
-          <source src="/video.mp4" type="video/mp4" />
+          <source src="./video.mp4" type="video/mp4" />
         </video>
 
-        {/* ✨ partículas */}
-        <div className="absolute inset-0 pointer-events-none">
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent" />
+
+        {/* Particles */}
+        <div className="absolute inset-0 overflow-hidden">
           {particles.map((p, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 0 }}
-              animate={{ opacity: [0, 1, 0], y: [-20, -80] }}
-              transition={{ duration: 6, repeat: Infinity, delay: p.delay }}
-              className="absolute w-1 h-1 bg-white/30 rounded-full"
-              style={{ left: p.left, bottom: 0 }}
+              animate={{ opacity: [0, 0.8, 0], y: [-30, -100] }}
+              transition={{ duration: 4 + Math.random() * 2, repeat: Infinity, delay: p.delay }}
+              className="absolute rounded-full bg-cyan-400/60"
+              style={{ left: p.left, bottom: '20%', width: p.size, height: p.size }}
             />
           ))}
         </div>
+
+        {/* Logo overlay */}
+        <div className="absolute bottom-8 left-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="flex items-center gap-3"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
+              <Globe className="h-7 w-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight neon-text-cyan">Soingtel</h1>
+              <p className="text-xs text-cyan-400/70 uppercase tracking-widest">Starlink Management</p>
+            </div>
+          </motion.div>
+        </div>
       </div>
 
-      {/* 🔐 LOGIN */}
-      <div className="flex-1 flex items-center justify-center px-6 py-10 md:py-0 md:px-12 lg:px-20 relative">
+      {/* LOGIN */}
+      <div className="flex-1 flex items-center justify-center px-6 py-8 md:py-0 md:px-12 lg:px-24 relative">
 
-        {/* 🌌 glow */}
+        {/* Glow effects */}
         <motion.div
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 6, repeat: Infinity }}
-          className="absolute w-64 h-64 md:w-96 md:h-96 bg-blue-500/10 blur-[140px] rounded-full"
+          animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 4, repeat: Infinity }}
+          className="absolute w-72 h-72 bg-cyan-500/10 blur-[150px] rounded-full"
+        />
+        <motion.div
+          animate={{ scale: [1, 1.1, 1], opacity: [0.2, 0.4, 0.2] }}
+          transition={{ duration: 5, repeat: Infinity, delay: 1 }}
+          className="absolute w-64 h-64 bg-blue-500/10 blur-[140px] rounded-full right-12"
         />
 
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          initial={{ opacity: 0, y: 40, filter: 'blur(10px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
           className="w-full max-w-md relative z-10"
         >
-          <motion.div
-            whileHover={{ y: -4 }}
-            transition={{ type: "spring", stiffness: 120 }}
-            className="relative rounded-2xl p-px bg-gradient-to-r from-blue-500/40 via-cyan-500/30 to-transparent"
-          >
-            <div className="bg-[#0F172A]/80 backdrop-blur-2xl rounded-2xl p-6 md:p-8 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
+          {/* Main card */}
+          <div className="relative rounded-2xl overflow-hidden">
+            {/* Animated border gradient */}
+            <div className="absolute inset-0 p-[1px] rounded-2xl bg-gradient-to-r from-cyan-500/50 via-blue-500/50 to-cyan-500/50 animate-border-glow" />
+            <div className="absolute inset-0 p-[1px] rounded-2xl bg-gradient-to-br from-transparent via-cyan-500/20 to-transparent" />
+
+            <div className="relative bg-[#0A1628]/90 backdrop-blur-2xl rounded-2xl p-8 border border-cyan-500/20 shadow-2xl shadow-cyan-500/10">
+
+              {/* Decorative corner elements */}
+              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-cyan-500/30 rounded-tl-2xl" />
+              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-cyan-500/30 rounded-br-2xl" />
 
               {/* HEADER */}
-              <div className="mb-6 md:mb-8 flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
-                  <ShieldCheck className="h-5 w-5 text-white" />
+              <div className="mb-8 flex items-center gap-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30 glow-cyan">
+                  <Globe className="h-7 w-7 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl md:text-2xl font-semibold tracking-tight">
-                    Bienvenido
+                  <h2 className="text-2xl font-bold tracking-tight text-white">
+                    Acceso Seguro
                   </h2>
-                  <p className="text-xs md:text-sm text-white/60 mt-0.5">
-                    Sistema de Gestión Soingtel
+                  <p className="text-xs text-cyan-400/70 mt-1 flex items-center gap-1.5">
+                    <Cpu className="h-3 w-3" />
+                    Sistema de Gestión Starlink
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
+              {/* Decorative line */}
+              <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent mb-6" />
+
+              <form onSubmit={handleSubmit} className="space-y-5">
 
                 {/* USERNAME */}
-                <div className="space-y-1.5 md:space-y-2 relative">
-                  <Label className="text-[10px] md:text-xs text-white/60 uppercase tracking-wide">
-                    Usuario
+                <div className="space-y-2 relative">
+                  <Label className="text-[10px] text-cyan-400/80 uppercase tracking-widest font-medium">
+                    Identificador
                   </Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                    <Input
-                      type="text"
-                      placeholder="Ingresa tu usuario"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      required
-                      className={`h-10 md:h-11 bg-white/5 border text-white placeholder:text-white/30 rounded-md pl-10 pr-3 transition-all duration-200
-                      ${
-                        error
-                          ? "border-red-400 focus-visible:ring-red-400"
-                          : "border-white/10 focus-visible:ring-blue-400/70 focus-visible:border-blue-400"
-                      }`}
-                    />
+                  <div className="relative group">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/0 via-cyan-500/30 to-cyan-500/0 rounded-lg opacity-0 group-focus-within:opacity-100 transition duration-300 blur-[1px]" />
+                    <div className="relative flex items-center">
+                      <User className="absolute left-4 h-5 w-5 text-cyan-500/50 z-10" />
+                      <Input
+                        type="text"
+                        placeholder="Ingresa tu usuario"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                        className="h-12 bg-[#0F2744]/50 border border-cyan-500/20 text-white placeholder:text-slate-500 rounded-lg pl-12 pr-4 transition-all duration-300 focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/30 focus:bg-[#0F2744]/70"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 {/* PASSWORD */}
-                <div className="space-y-1.5 md:space-y-2 relative">
-                  <Label className="text-[10px] md:text-xs text-white/60 uppercase tracking-wide">
+                <div className="space-y-2 relative">
+                  <Label className="text-[10px] text-cyan-400/80 uppercase tracking-widest font-medium">
                     Contraseña
                   </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className={`h-10 md:h-11 bg-white/5 border text-white placeholder:text-white/30 rounded-md pl-10 pr-10 transition-all duration-200
-                      ${
-                        error
-                          ? "border-red-400 focus-visible:ring-red-400"
-                          : "border-white/10 focus-visible:ring-blue-400/70 focus-visible:border-blue-400"
-                      }`}
-                    />
-
-                  {/* 👁️ */}
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    className="absolute right-3 top-[30px] md:top-[34px] text-white/50 hover:text-white transition"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                  <div className="relative group">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/0 via-cyan-500/30 to-cyan-500/0 rounded-lg opacity-0 group-focus-within:opacity-100 transition duration-300 blur-[1px]" />
+                    <div className="relative flex items-center">
+                      <Lock className="absolute left-4 h-5 w-5 text-cyan-500/50 z-10" />
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="h-12 bg-[#0F2744]/50 border border-cyan-500/20 text-white placeholder:text-slate-500 rounded-lg pl-12 pr-12 transition-all duration-300 focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/30 focus:bg-[#0F2744]/70"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                        className="absolute right-4 text-cyan-500/50 hover:text-cyan-400 transition-colors z-10"
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {/* ERROR */}
                 {error && (
                   <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-xs md:text-sm text-red-400 border border-red-400/30 px-3 py-2 rounded-md bg-red-400/5"
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    className="text-sm text-red-400 border border-red-500/30 px-4 py-3 rounded-lg bg-red-500/10 flex items-center gap-2"
                   >
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
                     {error}
                   </motion.div>
                 )}
 
-                {/* BOTÓN */}
-                <motion.div whileTap={{ scale: 0.96 }}>
+                {/* BUTTON */}
+                <motion.div whileTap={{ scale: 0.98 }}>
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="relative w-full h-10 md:h-11 rounded-md font-semibold overflow-hidden group disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                    className="relative w-full h-12 rounded-lg font-semibold overflow-hidden group disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed mt-2"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-90 group-hover:opacity-100 group-hover:brightness-110 transition" />
+                    {/* Glow effect on hover */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-cyan-500/20 to-blue-500/20" />
 
-                    <span className="relative z-10 text-black flex items-center justify-center gap-2 text-sm md:text-base">
-                      {loading && (
-                        <span className="w-4 h-4 border-2 border-black/40 border-t-black rounded-full animate-spin" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-cyan-400 to-blue-500 opacity-90 group-hover:opacity-100 group-hover:brightness-110 transition-all duration-300" />
+
+                    {/* Animated shine effect */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity">
+                      <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                    </div>
+
+                    <span className="relative z-10 text-black flex items-center justify-center gap-2 font-semibold tracking-wide">
+                      {loading ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-black/40 border-t-black rounded-full animate-spin" />
+                          <span>Verificando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4" />
+                          <span>ACCEDER AL SISTEMA</span>
+                        </>
                       )}
-                      {loading ? "Validando..." : "Entrar"}
                     </span>
                   </Button>
                 </motion.div>
 
               </form>
+
+              {/* Footer */}
+              <div className="mt-8 pt-4 border-t border-cyan-500/10">
+                <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest">
+                  Soingtel v2.0 • Sistema de Gestión Starlink
+                </p>
+              </div>
             </div>
-          </motion.div>
+          </div>
         </motion.div>
       </div>
     </div>
