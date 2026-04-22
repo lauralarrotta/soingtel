@@ -44,9 +44,9 @@ export default function DashboardSidebar({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "h-[calc(100vh-4rem)] border-r bg-card/60 backdrop-blur supports-[backdrop-filter]:bg-card/50",
+        "h-[calc(100vh-4rem)] border-r bg-card/60 backdrop-blur-md supports-[backdrop-filter]:bg-card/40",
         "transition-[width] duration-300 ease-in-out relative z-40 shadow-sm",
-        collapsed ? "w-20" : "w-64",
+        collapsed ? "w-16" : "w-56",
       )}
     >
       {/* Header */}
@@ -57,9 +57,9 @@ export default function DashboardSidebar({
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -8 }}
-              className="px-2 text-xs font-semibold tracking-wide text-muted-foreground"
+              className="px-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase"
             >
-              MENÚ
+              Menú
             </motion.span>
           )}
         </AnimatePresence>

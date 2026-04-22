@@ -119,15 +119,15 @@ export function DashboardHeader({
   };
 
   return (
-    <header className="h-16 border-b bg-card flex items-center justify-between px-6">
+    <header className="h-16 border-b bg-card/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-50 shadow-sm">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-[#45A29E] to-[#66FCF1] rounded-lg flex items-center justify-center">
-            <Globe className="h-6 w-6 text-white" />
+          <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <span className="text-white font-bold text-sm">S</span>
           </div>
           <div>
-            <h1 className="text-lg">Soingtel</h1>
-            <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
+            <h1 className="text-base font-semibold tracking-tight">Soingtel</h1>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gestión Starlink</p>
           </div>
         </div>
       </div>

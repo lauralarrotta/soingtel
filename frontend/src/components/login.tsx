@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { ShieldCheck, Eye, EyeOff, Lock, User } from "lucide-react";
 
 interface LoginProps {
   onLogin: (userType: string) => void;
@@ -98,35 +99,43 @@ export function Login({ onLogin }: LoginProps) {
             <div className="bg-[#0F172A]/80 backdrop-blur-2xl rounded-2xl p-6 md:p-8 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
 
               {/* HEADER */}
-              <div className="mb-6 md:mb-8">
-                <h2 className="text-xl md:text-2xl font-semibold tracking-tight">
-                  Bienvenido
-                </h2>
-                <p className="text-xs md:text-sm text-white/60 mt-1">
-                  Accede a tu panel de control
-                </p>
+              <div className="mb-6 md:mb-8 flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+                  <ShieldCheck className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl md:text-2xl font-semibold tracking-tight">
+                    Bienvenido
+                  </h2>
+                  <p className="text-xs md:text-sm text-white/60 mt-0.5">
+                    Sistema de Gestión Soingtel
+                  </p>
+                </div>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
 
                 {/* USERNAME */}
-                <div className="space-y-1.5 md:space-y-2">
+                <div className="space-y-1.5 md:space-y-2 relative">
                   <Label className="text-[10px] md:text-xs text-white/60 uppercase tracking-wide">
                     Usuario
                   </Label>
-                  <Input
-                    type="text"
-                    placeholder="Ej: admin"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                    className={`h-10 md:h-11 bg-transparent border text-white placeholder:text-white/30 rounded-md px-3 transition-all duration-200
-                    ${
-                      error
-                        ? "border-red-400 focus-visible:ring-red-400"
-                        : "border-white/10 focus-visible:ring-blue-400/70 focus-visible:border-blue-400"
-                    }`}
-                  />
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                    <Input
+                      type="text"
+                      placeholder="Ingresa tu usuario"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                      className={`h-10 md:h-11 bg-white/5 border text-white placeholder:text-white/30 rounded-md pl-10 pr-3 transition-all duration-200
+                      ${
+                        error
+                          ? "border-red-400 focus-visible:ring-red-400"
+                          : "border-white/10 focus-visible:ring-blue-400/70 focus-visible:border-blue-400"
+                      }`}
+                    />
+                  </div>
                 </div>
 
                 {/* PASSWORD */}
@@ -134,30 +143,32 @@ export function Login({ onLogin }: LoginProps) {
                   <Label className="text-[10px] md:text-xs text-white/60 uppercase tracking-wide">
                     Contraseña
                   </Label>
-
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className={`h-10 md:h-11 bg-transparent border text-white placeholder:text-white/30 rounded-md px-3 pr-10 transition-all duration-200
-                    ${
-                      error
-                        ? "border-red-400 focus-visible:ring-red-400"
-                        : "border-white/10 focus-visible:ring-blue-400/70 focus-visible:border-blue-400"
-                    }`}
-                  />
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className={`h-10 md:h-11 bg-white/5 border text-white placeholder:text-white/30 rounded-md pl-10 pr-10 transition-all duration-200
+                      ${
+                        error
+                          ? "border-red-400 focus-visible:ring-red-400"
+                          : "border-white/10 focus-visible:ring-blue-400/70 focus-visible:border-blue-400"
+                      }`}
+                    />
 
                   {/* 👁️ */}
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label="Mostrar u ocultar contraseña"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                     className="absolute right-3 top-[30px] md:top-[34px] text-white/50 hover:text-white transition"
                   >
-                    {showPassword ? "🙈" : "👁️"}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
+                  </div>
                 </div>
 
                 {/* ERROR */}

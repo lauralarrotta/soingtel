@@ -153,71 +153,86 @@ export function DashboardStats({ clientes }: DashboardStatsProps) {
   return (
     <div className="space-y-6">
       {/* Título del Dashboard */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl">Panel de Administración</h2>
+          <h2 className="text-xl font-semibold">Panel de Administración</h2>
           <p className="text-sm text-muted-foreground">
             Vista general del sistema Soingtel
           </p>
         </div>
-        <Badge className="bg-blue-500 hover:bg-blue-600">Admin Dashboard</Badge>
+        <Badge className="bg-blue-500 hover:bg-blue-600 gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          Admin Dashboard
+        </Badge>
       </div>
 
       {/* Estadísticas principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <Card className="overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-400" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">Total Clientes</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Clientes</CardTitle>
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Users className="h-4 w-4 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl">{totalClientes}</div>
+            <div className="text-3xl font-bold">{totalClientes}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Empresas registradas
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-green-500 to-green-400" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">Ingresos Mensuales</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Ingresos Mensuales</CardTitle>
+            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+              <DollarSign className="h-4 w-4 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl">
-              ${ingresosMensualesEsperados.toFixed(2)}
+            <div className="text-2xl font-bold">
+              ${ingresosMensualesEsperados.toFixed(0)}
             </div>
-            <p className="text-xs text-green-600 mt-1">
-              ${ingresosConfirmados.toFixed(2)} confirmados
+            <p className="text-xs text-green-600 mt-1 font-medium">
+              ${ingresosConfirmados.toFixed(0)} confirmados
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-emerald-500 to-emerald-400" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">Tasa de Confirmación</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium">Tasa de Confirmación</CardTitle>
+            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-emerald-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl">{tasaConfirmacion}%</div>
+            <div className="text-3xl font-bold">{tasaConfirmacion}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               {clientesConfirmados} de {totalClientes} clientes
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-purple-500 to-purple-400" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">Eficiencia de Cobro</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Eficiencia de Cobro</CardTitle>
+            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Activity className="h-4 w-4 text-purple-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl">{tasaCobro}%</div>
+            <div className="text-3xl font-bold">{tasaCobro}%</div>
             <div className="flex items-center gap-2 mt-2">
               <Progress value={parseFloat(tasaCobro)} className="h-2" />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {facturasPagadas} de {totalFacturas} facturas pagadas
+              {facturasPagadas}/{totalFacturas} facturas
             </p>
           </CardContent>
         </Card>
@@ -225,56 +240,68 @@ export function DashboardStats({ clientes }: DashboardStatsProps) {
 
       {/* Métricas de Facturación */}
       <div>
-        <h3 className="text-lg mb-3">Análisis de Facturación</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+        <h3 className="text-base font-medium mb-3 text-muted-foreground">Análisis de Facturación</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <Card className="overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-slate-400 to-slate-300" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm">Total Facturas</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Total Facturas</CardTitle>
+              <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                <FileText className="h-4 w-4 text-slate-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl">{totalFacturas}</div>
+              <div className="text-3xl font-bold">{totalFacturas}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Promedio: {promedioFacturasPorCliente} por cliente
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-green-200 bg-green-50">
+          <Card className="overflow-hidden border-green-200">
+            <div className="h-1 bg-gradient-to-r from-green-500 to-green-400" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm">Facturas Pagadas</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CardTitle className="text-sm font-medium text-green-700">Facturas Pagadas</CardTitle>
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl text-green-700">{facturasPagadas}</div>
-              <p className="text-xs text-green-600 mt-1">
-                ${montoFacturasPagadas.toFixed(2)} cobrados
+              <div className="text-3xl font-bold text-green-700">{facturasPagadas}</div>
+              <p className="text-xs text-green-600 mt-1 font-medium">
+                ${montoFacturasPagadas.toFixed(0)}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-yellow-200 bg-yellow-50">
+          <Card className="overflow-hidden border-yellow-200">
+            <div className="h-1 bg-gradient-to-r from-yellow-500 to-yellow-400" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm">Facturas Pendientes</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600" />
+              <CardTitle className="text-sm font-medium text-yellow-700">Facturas Pendientes</CardTitle>
+              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <Clock className="h-4 w-4 text-yellow-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl text-yellow-700">
+              <div className="text-3xl font-bold text-yellow-700">
                 {facturasPendientes}
               </div>
-              <p className="text-xs text-yellow-600 mt-1">Por confirmar pago</p>
+              <p className="text-xs text-yellow-600 mt-1">Por confirmar</p>
             </CardContent>
           </Card>
 
-          <Card className="border-red-200 bg-red-50">
+          <Card className="overflow-hidden border-red-200">
+            <div className="h-1 bg-gradient-to-r from-red-500 to-red-400" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm">Facturas Vencidas</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <CardTitle className="text-sm font-medium text-red-700">Facturas Vencidas</CardTitle>
+              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl text-red-700">{facturasVencidas}</div>
-              <p className="text-xs text-red-600 mt-1">
-                ${montoFacturasVencidas.toFixed(2)} en mora
+              <div className="text-3xl font-bold text-red-700">{facturasVencidas}</div>
+              <p className="text-xs text-red-600 mt-1 font-medium">
+                ${montoFacturasVencidas.toFixed(0)} en mora
               </p>
             </CardContent>
           </Card>
