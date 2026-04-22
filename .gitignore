@@ -1,0 +1,66 @@
+# 🔐 Variables de entorno
+.env
+.env.local
+.env.*.local
+*.env.production
+
+# 📦 Dependencias
+node_modules/
+*/node_modules/
+
+# 🏗️ Build
+dist/
+build/
+*/dist/
+*/build/
+
+# 🗺️ Mapas de compilación
+*.tsbuildinfo
+*/**/*.tsbuildinfo
+
+# 🧪 Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# 💻 Sistema operativo
+.DS_Store
+Thumbs.db
+
+# 🧠 Claude Code (sesiones locales)
+.claude/
+
+# 🧠 IDE / Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# 📄 Archivos temporales
+tmp/
+temp/
+*.tmp
+*.temp
+
+# 🧪 Coverage tests
+coverage/
+*/coverage/
+
+# 🔒 Archivos de lock (opcional - descomenta si no quieres subir locks)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# 🗄️ Base de datos local (si existe)
+*.sqlite
+*.sqlite3
+*.db
+
+# 📝 Notas y archivos misc
+*.md
+!README.md
+notes/
