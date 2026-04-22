@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { API_CONFIG } from "@/config";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +57,7 @@ export function AlertasSuspensionModal({
     setLoading(true);
     try {
       // 1) Cargar alertas del servidor (compartidas entre usuarios)
-      const res = await fetch("https://soingtel.onrender.com/api/alertas_suspension");
+      const res = await fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`);
       if (res.ok) {
         const data = await res.json();
         const delServidor: AlertaSuspension[] = (data.alertas_suspension || [])
@@ -107,7 +108,7 @@ export function AlertasSuspensionModal({
 
     // Marcar en el servidor
     try {
-      await fetch("https://soingtel.onrender.com/api/alertas_suspension", {
+      await fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alertas_suspension: [{ id, vista: true }] }),
@@ -122,7 +123,7 @@ export function AlertasSuspensionModal({
     setAlertas(alertasActualizadas);
     localStorage.setItem("alertas_suspension", JSON.stringify(alertasActualizadas));
     try {
-      await fetch("https://soingtel.onrender.com/api/alertas_suspension", {
+      await fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alertas_suspension: [{ id, vista: true }] }),
@@ -140,7 +141,7 @@ export function AlertasSuspensionModal({
   const ejecutarSuspension = async (alerta: AlertaSuspension) => {
     try {
       const response = await fetch(
-        `https://soingtel.onrender.com/api/clientes/${alerta.kit}/estado`,
+        `${API_CONFIG.BASE_URL}/clientes/${alerta.kit}/estado`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -161,7 +162,7 @@ export function AlertasSuspensionModal({
 
       // Intentar eliminar del servidor (si el endpoint ya existe)
       try {
-        await fetch(`https://soingtel.onrender.com/api/alertas_suspension/${alerta.id}`, {
+        await fetch(`${API_CONFIG.BASE_URL}/alertas_suspension/${alerta.id}`, {
           method: "DELETE",
         });
       } catch {

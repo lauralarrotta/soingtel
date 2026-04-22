@@ -59,6 +59,7 @@ import { useDatabase } from "./../hooks/useDatabase";
 import { calcularEstadoCliente } from "@/utils/clientes";
 import { Cliente, Factura, EstadoFacturacion } from "@/types/cliente";
 import { clientesService } from "@/services/clientesService";
+import { alertasService } from "@/services/alertasService";
 import { useMemo } from "react";
 import { facturasService } from "@/services/facturasService";
 
@@ -196,15 +197,11 @@ const crearCliente = async (cliente: Cliente) => {
       if (userType === "soporte" || userType === "admin") {
         // Guardar alerta en el backend para compartir entre usuarios
         try {
-          await fetch("https://soingtel.onrender.com/api/alertas_facturacion/crear", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              kit: cliente.kit,
-              nombre: cliente.nombrecliente,
-              cuenta: cliente.cuenta,
-              email: cliente.email,
-            }),
+          await alertasService.crearFacturacion({
+            kit: cliente.kit,
+            nombre: cliente.nombrecliente,
+            cuenta: cliente.cuenta,
+            email: cliente.email,
           });
         } catch (alertaErr) {
           console.warn("No se pudo crear alerta en servidor:", alertaErr);
@@ -429,17 +426,13 @@ const handleSaveClienteCompleto = async (
     try {
       // Guardar alerta en el backend para compartir entre usuarios
       try {
-        await fetch("https://soingtel.onrender.com/api/alertas_suspension/crear", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            kit: selectedCliente.kit,
-            nombre: selectedCliente.nombrecliente || (selectedCliente as any).nombre_cliente,
-            cuenta: selectedCliente.cuenta,
-            email: selectedCliente.email,
-            motivo,
-            facturasVencidas: contarFacturasVencidas(selectedCliente),
-          }),
+        await alertasService.crearSuspension({
+          kit: selectedCliente.kit,
+          nombre: selectedCliente.nombrecliente || (selectedCliente as any).nombre_cliente,
+          cuenta: selectedCliente.cuenta,
+          email: selectedCliente.email,
+          motivo,
+          facturasVencidas: contarFacturasVencidas(selectedCliente),
         });
       } catch (alertaErr) {
         console.warn("No se pudo crear alerta de suspension en servidor:", alertaErr);
@@ -499,17 +492,13 @@ const handleSaveClienteCompleto = async (
 
     // Crear alerta en el backend para compartir entre usuarios
     try {
-      await fetch("https://soingtel.onrender.com/api/alertas_reactivacion/crear", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kit: cliente.kit,
-          nombre: cliente.nombrecliente,
-          cuenta: cliente.cuenta,
-          email: cliente.email,
-          ultimoPago: ultimaFactura?.fechaPago || ultimaFactura?.fecha || "N/A",
-          metodoPago: ultimaFactura?.metodoPago || "No especificado",
-        }),
+      await alertasService.crearReactivacion({
+        kit: cliente.kit,
+        nombre: cliente.nombrecliente,
+        cuenta: cliente.cuenta,
+        email: cliente.email,
+        ultimoPago: ultimaFactura?.fechaPago || ultimaFactura?.fecha || "N/A",
+        metodoPago: ultimaFactura?.metodoPago || "No especificado",
       });
     } catch (alertaErr) {
       console.warn("No se pudo crear alerta de reactivacion en servidor:", alertaErr);
@@ -1186,11 +1175,7 @@ const handleSaveClienteCompleto = async (
                                 onClick={async () => {
                                   if (window.confirm("¿Confirmas marcar este cliente como EN DAÑO? El servicio se inhabilitará.")) {
                                     try {
-                                      await fetch(`https://soingtel.onrender.com/api/clientes/${cliente.kit}/estado`, {
-                                        method: "PUT",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ estado_pago: "en_dano" }),
-                                      });
+                                      await clientesService.actualizarEstado(cliente.kit, "en_dano");
                                       await reloadClientes();
                                       toast.error("Cliente marcado en daño!");
                                     } catch (e) {
@@ -1214,11 +1199,7 @@ const handleSaveClienteCompleto = async (
                                 onClick={async () => {
                                   if (window.confirm("¿Confirmas marcar este cliente EN GARANTÍA? El servicio se inhabilitará.")) {
                                     try {
-                                      await fetch(`https://soingtel.onrender.com/api/clientes/${cliente.kit}/estado`, {
-                                        method: "PUT",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ estado_pago: "garantia" }),
-                                      });
+                                      await clientesService.actualizarEstado(cliente.kit, "garantia");
                                       await reloadClientes();
                                       toast.error("Cliente marcado en garantía!");
                                     } catch (e) {
@@ -1242,11 +1223,7 @@ const handleSaveClienteCompleto = async (
                                 onClick={async () => {
                                   if (window.confirm("¿Confirmas marcar este cliente como TRANSFERIDO?")) {
                                     try {
-                                      await fetch(`https://soingtel.onrender.com/api/clientes/${cliente.kit}/estado`, {
-                                        method: "PUT",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ estado_pago: "transferida" }),
-                                      });
+                                      await clientesService.actualizarEstado(cliente.kit, "transferida");
                                       await reloadClientes();
                                       toast.success("Cliente transferido!");
                                     } catch (e) {

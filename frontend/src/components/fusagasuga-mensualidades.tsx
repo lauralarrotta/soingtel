@@ -55,41 +55,11 @@ import { DashboardStats } from "./dashboard-stats";
 import { ContadorCorte } from "./contador-corte";
 import { toast } from "sonner";
 import { useDatabase } from "../hooks/useDatabase";
-
-type EstadoFacturacion = "pendiente" | "facturado" | "ROC" | "PPC" | null;
-
-interface Factura {
-  numero: string;
-  fecha: string;
-  valor: number;
-  estadoPago: "pagado" | "pendiente" | "vencido" | "roc" | "ppc";
-  metodoPago?: string;
-  fechaPago?: string;
-  periodo?: string;
-}
-
-interface Cliente {
-  kit: string;
-  nombrecliente: string;
-  cuenta: string;
-  cuentastarlink?: string;
-  cuenta_starlink?: string;
-  coordenadas?: string;
-  email: string;
-  contrasena?: string;
-  fechaActivacion?: string;
-  corte: number;
-  corteFacturacion?: number;
-  estado_pago: "confirmado" | "pendiente" | "suspendido" | "en_dano" | "garantia" | "transferida" | string;
-  estado_facturacion?: EstadoFacturacion;
-  observaciones: string;
-  costo: string;
-  valorFacturar?: string;
-  valorSoporte?: string;
-  tipoSoporte?: string;
-  facturas?: Factura[];
-}
-
+import { fusagasugaService } from "@/services/fusagasugaService";
+import { alertasService } from "@/services/alertasService";
+import { facturasService } from "@/services/facturasService";
+import { API_CONFIG } from "@/config";
+import { EstadoFacturacion, Factura, Cliente } from "@/types/cliente";
 
 interface FusagasugaMensualidadesProps {
   userType?: string;
@@ -138,10 +108,8 @@ export function FusagasugaMensualidades({
 
   const cargarEstadisticas = async () => {
     try {
-      const res = await fetch("https://soingtel.onrender.com/api/clientes_fusagasuga/estadisticas");
-      if (res.ok) {
-        setEstadisticas(await res.json());
-      }
+      const data = await fusagasugaService.estadisticas();
+      setEstadisticas(data);
     } catch { }
   };
 
@@ -211,42 +179,14 @@ export function FusagasugaMensualidades({
       ...cliente
     };
 
-    const response = await fetch("https://soingtel.onrender.com/api/clientes_fusagasuga", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Error creando cliente");
-    }
-
+    const data = await fusagasugaService.crear(payload);
     await reloadClientes(); // 🔥 sincroniza con servidor
   };
 
   const exportarExcelBackend = async () => {
     try {
-      const response = await fetch(
-        "https://soingtel.onrender.com/api/exportar-sheets",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ clientes }), // 👈 envías los clientes actuales
-        },
-      );
+      const data = await fusagasugaService.exportar(clientes);
 
-      if (!response.ok) {
-        throw new Error("Error exportando Excel");
-      }
-
-      const data = await response.json();
-
-      // 🔥 OPCIONAL: si el backend devuelve un link
       if (data.url) {
         window.open(data.url, "_blank");
       }
@@ -278,16 +218,12 @@ export function FusagasugaMensualidades({
       if (userType === "soporte" || userType === "admin") {
         // Guardar alerta en el backend para compartir entre usuarios
         try {
-          await fetch("https://soingtel.onrender.com/api/alertas_facturacion/crear", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              kit: cliente.kit,
-              nombre: cliente.nombrecliente,
-              cuenta: cliente.cuenta,
-              email: cliente.email,
-              sede: "fusagasuga",
-            }),
+          await alertasService.crearFacturacion({
+            kit: cliente.kit,
+            nombre: cliente.nombrecliente,
+            cuenta: cliente.cuenta,
+            email: cliente.email,
+            sede: "fusagasuga",
           });
         } catch (alertaErr) {
           console.warn("No se pudo crear alerta en servidor:", alertaErr);
@@ -304,19 +240,7 @@ export function FusagasugaMensualidades({
     try {
       console.log("CLIENTES ENVIADOS AL BACKEND:", clientesImportados);
 
-      const response = await fetch(
-        "https://soingtel.onrender.com/api/clientes_fusagasuga/importar",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            clientes: clientesImportados,
-            userType,
-          }),
-        },
-      );
+      const response = await fusagasugaService.importar(clientesImportados, userType || "soporte");
 
       console.log("STATUS RESPUESTA:", response.status);
 
@@ -340,7 +264,7 @@ export function FusagasugaMensualidades({
   const handleSaveFactura = async (kit: string, factura: Factura) => {
     try {
       const response = await fetch(
-        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/facturas`,
+        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/facturas`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -391,7 +315,7 @@ export function FusagasugaMensualidades({
     facturaEditada: Factura,
   ) => {
     const response = await fetch(
-      `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/facturas/${numeroOriginal}`,
+      `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/facturas/${numeroOriginal}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -414,7 +338,7 @@ export function FusagasugaMensualidades({
 
     try {
       const response = await fetch(
-        `https://soingtel.onrender.com/api/clientes_fusagasuga/${selectedCliente.kit}/facturas/${factura.numero}`,
+        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${selectedCliente.kit}/facturas/${factura.numero}`,
         {
           method: "DELETE",
         }
@@ -441,7 +365,7 @@ export function FusagasugaMensualidades({
   ) => {
     try {
       const response = await fetch(
-        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/facturas/${numeroFactura}`,
+        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/facturas/${numeroFactura}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -467,7 +391,7 @@ export function FusagasugaMensualidades({
   const handleSaveObservacion = async (kit: string, observacion: string) => {
     try {
       const response = await fetch(
-        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/observacion`,
+        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/observacion`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -497,7 +421,7 @@ export function FusagasugaMensualidades({
   ) => {
     try {
       const response = await fetch(
-        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/estado`,
+        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/estado`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -531,7 +455,7 @@ export function FusagasugaMensualidades({
 
     try {
       const response = await fetch(
-        `https://soingtel.onrender.com/api/clientes_fusagasuga/${selectedCliente.kit}`,
+        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${selectedCliente.kit}`,
         { method: "DELETE" },
       );
 
@@ -558,7 +482,7 @@ export function FusagasugaMensualidades({
   ) => {
     try {
       const response = await fetch(
-        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kitOriginal}`,
+        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kitOriginal}`,
         {
           method: "PUT",
           headers: {
@@ -602,18 +526,14 @@ export function FusagasugaMensualidades({
     try {
       // Guardar alerta en el backend para compartir entre usuarios
       try {
-        await fetch("https://soingtel.onrender.com/api/alertas_suspension/crear", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            kit: selectedCliente.kit,
-            nombre: selectedCliente.nombrecliente || (selectedCliente as any).nombre_cliente,
-            cuenta: selectedCliente.cuenta,
-            email: selectedCliente.email,
-            motivo,
-            facturasVencidas: contarFacturasVencidas(selectedCliente),
-            sede: "fusagasuga",
-          }),
+        await alertasService.crearSuspension({
+          kit: selectedCliente.kit,
+          nombre: selectedCliente.nombrecliente || (selectedCliente as any).nombre_cliente,
+          cuenta: selectedCliente.cuenta,
+          email: selectedCliente.email,
+          motivo,
+          facturasVencidas: contarFacturasVencidas(selectedCliente),
+          sede: "fusagasuga",
         });
       } catch (alertaErr) {
         console.warn("No se pudo crear alerta de suspension en servidor:", alertaErr);
@@ -633,7 +553,7 @@ export function FusagasugaMensualidades({
   ) => {
     try {
       const res = await fetch(
-        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/facturacion`,
+        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/facturacion`,
         {
           method: "PUT",
           headers: {
@@ -688,18 +608,14 @@ export function FusagasugaMensualidades({
 
     // Crear alerta en el backend para compartir entre usuarios
     try {
-      await fetch("https://soingtel.onrender.com/api/alertas_reactivacion/crear", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kit: cliente.kit,
-          nombre: cliente.nombrecliente,
-          cuenta: cliente.cuenta,
-          email: cliente.email,
-          ultimoPago: ultimaFactura?.fechaPago || ultimaFactura?.fecha || "N/A",
-          metodoPago: ultimaFactura?.metodoPago || "No especificado",
-          sede: "fusagasuga",
-        }),
+      await alertasService.crearReactivacion({
+        kit: cliente.kit,
+        nombre: cliente.nombrecliente,
+        cuenta: cliente.cuenta,
+        email: cliente.email,
+        ultimoPago: ultimaFactura?.fechaPago || ultimaFactura?.fecha || "N/A",
+        metodoPago: ultimaFactura?.metodoPago || "No especificado",
+        sede: "fusagasuga",
       });
     } catch (alertaErr) {
       console.warn("No se pudo crear alerta de reactivacion en servidor:", alertaErr);
@@ -1342,11 +1258,7 @@ export function FusagasugaMensualidades({
                                 onClick={async () => {
                                   if (window.confirm("¿Confirmas marcar este cliente como EN DAÑO? El servicio se inhabilitará.")) {
                                     try {
-                                      await fetch(`https://soingtel.onrender.com/api/clientes_fusagasuga/${cliente.kit}/estado`, {
-                                        method: "PUT",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ estado_pago: "en_dano" }),
-                                      });
+                                      await fusagasugaService.actualizarEstado(cliente.kit, "en_dano");
                                       await reloadClientes();
                                       toast.error("Cliente marcado en daño!");
                                     } catch (e) {
@@ -1370,11 +1282,7 @@ export function FusagasugaMensualidades({
                                 onClick={async () => {
                                   if (window.confirm("¿Confirmas marcar este cliente EN GARANTÍA? El servicio se inhabilitará.")) {
                                     try {
-                                      await fetch(`https://soingtel.onrender.com/api/clientes_fusagasuga/${cliente.kit}/estado`, {
-                                        method: "PUT",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ estado_pago: "garantia" }),
-                                      });
+                                      await fusagasugaService.actualizarEstado(cliente.kit, "garantia");
                                       await reloadClientes();
                                       toast.error("Cliente marcado en garantía!");
                                     } catch (e) {
@@ -1398,11 +1306,7 @@ export function FusagasugaMensualidades({
                                 onClick={async () => {
                                   if (window.confirm("¿Confirmas marcar este cliente como TRANSFERIDA?")) {
                                     try {
-                                      await fetch(`https://soingtel.onrender.com/api/clientes_fusagasuga/${cliente.kit}/estado`, {
-                                        method: "PUT",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ estado_pago: "transferida" }),
-                                      });
+                                      await fusagasugaService.actualizarEstado(cliente.kit, "transferida");
                                       await reloadClientes();
                                       toast.success("Cliente marcado como transferida!");
                                     } catch (e) {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Login } from "./components/login";
 import { DashboardHeader } from "./components/dashboard-header";
 import DashboardSidebar from "./components/dashboard-sidebar";
@@ -12,11 +13,88 @@ import { PlaceholderSection } from "./components/placeholder-section";
 import { Users, Activity, FileText, Settings } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
+import { SECTIONS } from "./constants/navigation";
+
+const ROUTES = {
+  LOGIN: "/login",
+  MENSUALIDADES: "/mensualidades",
+  FUSAGASUGA: "/fusagasuga",
+  CLIENTES_STATUS: "/clientes-status",
+  CLIENTES: "/clientes",
+  SEMAFORIZACION: "/semaforizacion",
+  REPORTES: "/reportes",
+  CONFIGURACION: "/configuracion",
+} as const;
+
+function ProtectedRoute({ children, userType }: { children: React.ReactNode; userType: string }) {
+  const isLoggedIn = userType !== "";
+  if (!isLoggedIn) {
+    return <Navigate to={ROUTES.LOGIN} replace />;
+  }
+  return <>{children}</>;
+}
+
+function DashboardLayout({
+  userType,
+  theme,
+  onLogout,
+  onToggleTheme,
+  alertCount,
+  onOpenAlertas,
+  onOpenAlertasSuspension,
+  onOpenAlertasReactivacion,
+  children,
+}: {
+  userType: string;
+  theme: "light" | "dark";
+  onLogout: () => void;
+  onToggleTheme: () => void;
+  alertCount: number;
+  onOpenAlertas: () => void;
+  onOpenAlertasSuspension: () => void;
+  onOpenAlertasReactivacion: () => void;
+  children: React.ReactNode;
+}) {
+  const location = useLocation();
+
+  const activeSection = (() => {
+    const path = location.pathname;
+    if (path === ROUTES.MENSUALIDADES) return SECTIONS.MENSUALIDADES;
+    if (path === ROUTES.FUSAGASUGA) return SECTIONS.FUSAGASUGA;
+    if (path === ROUTES.CLIENTES_STATUS) return SECTIONS.CLIENTES_STATUS;
+    if (path === ROUTES.CLIENTES) return SECTIONS.CLIENTES;
+    if (path === ROUTES.SEMAFORIZACION) return SECTIONS.SEMAFORIZACION;
+    if (path === ROUTES.REPORTES) return SECTIONS.REPORTES;
+    if (path === ROUTES.CONFIGURACION) return SECTIONS.CONFIGURACION;
+    return SECTIONS.MENSUALIDADES;
+  })();
+
+  return (
+    <div className="h-screen flex flex-col bg-background">
+      <DashboardHeader
+        userType={userType}
+        onLogout={onLogout}
+        alertCount={alertCount}
+        onOpenAlertas={onOpenAlertas}
+        onOpenAlertasSuspension={onOpenAlertasSuspension}
+        onOpenAlertasReactivacion={onOpenAlertasReactivacion}
+        currentTheme={theme}
+        onToggleTheme={onToggleTheme}
+      />
+      <div className="flex flex-1 overflow-hidden">
+        <DashboardSidebar
+          activeSection={activeSection}
+          onSectionChange={() => {}}
+          userType={userType}
+        />
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userType, setUserType] = useState("");
-  const [activeSection, setActiveSection] = useState("mensualidades");
   const [alertasModalOpen, setAlertasModalOpen] = useState(false);
   const [alertasSuspensionOpen, setAlertasSuspensionOpen] = useState(false);
   const [alertasReactivacionOpen, setAlertasReactivacionOpen] = useState(false);
@@ -25,7 +103,6 @@ export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    // Check system preference or saved theme
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
     if (savedTheme) {
       setTheme(savedTheme);
@@ -49,18 +126,13 @@ export default function App() {
 
   const handleLogin = (type: string) => {
     setUserType(type);
-    setIsLoggedIn(true);
-    setActiveSection("mensualidades");
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
     setUserType("");
-    setActiveSection("mensualidades");
   };
 
   useEffect(() => {
-    // Actualizar contador de alertas
     const updateAlertCount = () => {
       if (userType === "facturacion" || userType === "admin") {
         const alertasFact = localStorage.getItem("alertas_facturacion");
@@ -89,8 +161,6 @@ export default function App() {
 
   const handleOpenAlertas = () => {
     if (userType === "facturacion" || userType === "admin") {
-      // Abrir modal de facturación o suspensión según contexto
-      // Por defecto abrimos facturación
       setAlertasModalOpen(true);
     }
   };
@@ -108,92 +178,147 @@ export default function App() {
   };
 
   const handleAgregarFacturaDesdeAlerta = (alerta: any) => {
-    // Buscar el cliente en el componente de control de mensualidades
     setClienteParaFacturar(alerta);
     toast.info(`Abriendo formulario de factura para ${alerta.nombre}`);
   };
 
-  const renderSection = () => {
-    switch (activeSection) {
-      case "mensualidades":
-        return (
-          <ControlMensualidades
-            userType={userType}
-            clienteParaFacturar={clienteParaFacturar}
-            onFacturaAgregada={() => setClienteParaFacturar(null)}
-          />
-        );
-      case "fusagasuga":
-        return (
-          <FusagasugaMensualidades
-            userType={userType}
-            clienteParaFacturar={clienteParaFacturar}
-            onFacturaAgregada={() => setClienteParaFacturar(null)}
-          />
-        );
-      case "clientes-status":
-        return <ClientesStatusPanel />;
-      case "clientes":
-        return (
-          <PlaceholderSection
-            title="Clientes"
-            description="Esta sección mostrará el listado completo de clientes con sus detalles y historial."
-            icon={<Users className="h-16 w-16" />}
-          />
-        );
-      case "semaforizacion":
-        return (
-          <PlaceholderSection
-            title="Semaforización de pagos"
-            description="Visualización en tiempo real del estado de pagos con indicadores de color."
-            icon={<Activity className="h-16 w-16" />}
-          />
-        );
-      case "reportes":
-        return (
-          <PlaceholderSection
-            title="Reportes"
-            description="Generación de reportes detallados de facturación y pagos."
-            icon={<FileText className="h-16 w-16" />}
-          />
-        );
-      case "configuracion":
-        return (
-          <PlaceholderSection
-            title="Configuración"
-            description="Configura los parámetros del sistema y preferencias de usuario."
-            icon={<Settings className="h-16 w-16" />}
-          />
-        );
-      default:
-        return <ControlMensualidades userType={userType} />;
-    }
+  const dashboardProps = {
+    userType,
+    theme,
+    onLogout: handleLogout,
+    onToggleTheme: toggleTheme,
+    alertCount,
+    onOpenAlertas: handleOpenAlertas,
+    onOpenAlertasSuspension: handleOpenAlertasSuspension,
+    onOpenAlertasReactivacion: handleOpenAlertasReactivacion,
   };
 
-  if (!isLoggedIn) {
-    return <Login onLogin={handleLogin} />;
-  }
-
   return (
-    <div className="h-screen flex flex-col bg-background">
-      <DashboardHeader
-        userType={userType}
-        onLogout={handleLogout}
-        alertCount={alertCount}
-        onOpenAlertas={handleOpenAlertas}
-        onOpenAlertasSuspension={handleOpenAlertasSuspension}
-        onOpenAlertasReactivacion={handleOpenAlertasReactivacion}
-        currentTheme={theme}
-        onToggleTheme={toggleTheme}
-      />
-      <div className="flex flex-1 overflow-hidden">
-        <DashboardSidebar
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-          userType={userType}
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path={ROUTES.LOGIN}
+          element={
+            userType ? (
+              <Navigate to={ROUTES.MENSUALIDADES} replace />
+            ) : (
+              <Login onLogin={handleLogin} />
+            )
+          }
         />
-        <main className="flex-1 overflow-y-auto">{renderSection()}</main>
-      </div>
+
+        <Route
+          path={ROUTES.MENSUALIDADES}
+          element={
+            <ProtectedRoute userType={userType}>
+              <DashboardLayout {...dashboardProps}>
+                <ControlMensualidades
+                  userType={userType}
+                  clienteParaFacturar={clienteParaFacturar}
+                  onFacturaAgregada={() => setClienteParaFacturar(null)}
+                />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path={ROUTES.FUSAGASUGA}
+          element={
+            <ProtectedRoute userType={userType}>
+              <DashboardLayout {...dashboardProps}>
+                <FusagasugaMensualidades
+                  userType={userType}
+                  clienteParaFacturar={clienteParaFacturar}
+                  onFacturaAgregada={() => setClienteParaFacturar(null)}
+                />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path={ROUTES.CLIENTES_STATUS}
+          element={
+            <ProtectedRoute userType={userType}>
+              <DashboardLayout {...dashboardProps}>
+                <ClientesStatusPanel />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path={ROUTES.CLIENTES}
+          element={
+            <ProtectedRoute userType={userType}>
+              <DashboardLayout {...dashboardProps}>
+                <PlaceholderSection
+                  title="Clientes"
+                  description="Esta sección mostrará el listado completo de clientes con sus detalles y historial."
+                  icon={<Users className="h-16 w-16" />}
+                />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path={ROUTES.SEMAFORIZACION}
+          element={
+            <ProtectedRoute userType={userType}>
+              <DashboardLayout {...dashboardProps}>
+                <PlaceholderSection
+                  title="Semaforización de pagos"
+                  description="Visualización en tiempo real del estado de pagos con indicadores de color."
+                  icon={<Activity className="h-16 w-16" />}
+                />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path={ROUTES.REPORTES}
+          element={
+            <ProtectedRoute userType={userType}>
+              <DashboardLayout {...dashboardProps}>
+                <PlaceholderSection
+                  title="Reportes"
+                  description="Generación de reportes detallados de facturación y pagos."
+                  icon={<FileText className="h-16 w-16" />}
+                />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path={ROUTES.CONFIGURACION}
+          element={
+            <ProtectedRoute userType={userType}>
+              <DashboardLayout {...dashboardProps}>
+                <PlaceholderSection
+                  title="Configuración"
+                  description="Configura los parámetros del sistema y preferencias de usuario."
+                  icon={<Settings className="h-16 w-16" />}
+                />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="*"
+          element={
+            userType ? (
+              <Navigate to={ROUTES.MENSUALIDADES} replace />
+            ) : (
+              <Navigate to={ROUTES.LOGIN} replace />
+            )
+          }
+        />
+      </Routes>
 
       <AlertasFacturacionModal
         open={alertasModalOpen}
@@ -215,6 +340,6 @@ export default function App() {
       />
 
       <Toaster />
-    </div>
+    </BrowserRouter>
   );
 }
