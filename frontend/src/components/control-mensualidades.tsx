@@ -736,7 +736,7 @@ const handleSaveClienteCompleto = async (
         </Card>
       </div>
 
-      <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+      <div className="bg-[#0A1628]/60 backdrop-blur-xl rounded-xl border border-cyan-500/20 shadow-xl shadow-cyan-500/5 overflow-hidden">
         <div className="p-6 pb-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">

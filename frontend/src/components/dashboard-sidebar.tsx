@@ -44,20 +44,23 @@ export default function DashboardSidebar({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "h-[calc(100vh-4rem)] border-r bg-card/60 backdrop-blur-md supports-[backdrop-filter]:bg-card/40",
-        "transition-[width] duration-300 ease-in-out relative z-40 shadow-sm",
+        "h-[calc(100vh-4rem)] border-r bg-[#0A1628]/60 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0A1628]/40",
+        "transition-[width] duration-300 ease-in-out relative z-40",
         collapsed ? "w-16" : "w-56",
       )}
     >
+      {/* Glow effect on the right edge */}
+      <div className="absolute right-0 top-0 w-px h-full bg-gradient-to-b from-transparent via-cyan-500/30 to-transparent" />
+
       {/* Header */}
       <div className="flex items-center justify-between p-3 mt-1">
         <AnimatePresence initial={false}>
           {!collapsed && (
             <motion.span
-              initial={{ opacity: 0, x: -8 }}
+              initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -8 }}
-              className="px-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase"
+              exit={{ opacity: 0, x: -10 }}
+              className="px-2 text-[9px] font-bold tracking-[0.2em] text-cyan-400/60 uppercase"
             >
               Menú
             </motion.span>
@@ -97,20 +100,20 @@ export default function DashboardSidebar({
                   className={cn(
                     "group relative w-full rounded-xl",
                     "transition-all duration-200",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50",
                     collapsed
                       ? "flex justify-center p-3"
                       : "flex items-center gap-3 px-3 py-2.5",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-sm font-medium"
-                      : "text-foreground hover:bg-accent/80 hover:text-accent-foreground",
+                      ? "bg-gradient-to-r from-cyan-500/20 to-transparent text-cyan-400 shadow-lg shadow-cyan-500/10"
+                      : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200",
                   )}
                 >
                   {/* Active indicator */}
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active-pill"
-                      className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-primary"
+                      className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-cyan-400 to-cyan-500 shadow-lg shadow-cyan-500/30"
                     />
                   )}
 
@@ -118,6 +121,7 @@ export default function DashboardSidebar({
                     className={cn(
                       "h-5 w-5 shrink-0 transition-transform duration-200",
                       "group-hover:scale-110",
+                      isActive ? "text-cyan-400" : ""
                     )}
                   />
 
