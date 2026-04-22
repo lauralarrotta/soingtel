@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { CheckCircle, Power, X } from "lucide-react";
+import { CheckCircle, Power, X, RefreshCw } from "lucide-react";
 
 interface AlertaReactivacion {
   id: string;
@@ -44,6 +44,7 @@ export function AlertasReactivacionModal({
   userType,
 }: AlertasReactivacionModalProps) {
   const [alertas, setAlertas] = useState<AlertaReactivacion[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -51,25 +52,73 @@ export function AlertasReactivacionModal({
     }
   }, [open]);
 
-  const cargarAlertas = () => {
-    const alertasGuardadas = localStorage.getItem("alertas_reactivacion");
-    if (alertasGuardadas) {
-      setAlertas(JSON.parse(alertasGuardadas));
+  const cargarAlertas = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("https://soingtel.onrender.com/api/alertas_reactivacion");
+      if (res.ok) {
+        const data = await res.json();
+        const delServidor: AlertaReactivacion[] = (data.alertas_reactivacion || [])
+          .filter((a: any) => !a.vista)
+          .map((a: any) => ({
+            id: String(a.id),
+            kit: a.cliente_kit,
+            nombre: a.cliente_nombre,
+            cuenta: "",
+            email: "",
+            fechaReactivacion: a.fecha_creacion,
+            ultimoPago: a.numero_factura || "N/A",
+            metodoPago: "",
+            vista: a.vista || false,
+          }));
+
+        const locales: AlertaReactivacion[] = JSON.parse(
+          localStorage.getItem("alertas_reactivacion") || "[]"
+        );
+
+        const todas = [...delServidor];
+        locales.forEach((local) => {
+          if (!todas.find((r) => r.id === String(local.id))) {
+            todas.push(local);
+          }
+        });
+
+        setAlertas(todas);
+      }
+    } catch (e) {
+      const locales = localStorage.getItem("alertas_reactivacion");
+      if (locales) setAlertas(JSON.parse(locales));
+    } finally {
+      setLoading(false);
     }
   };
 
-  const marcarComoVista = (id: string) => {
+  const marcarComoVista = async (id: string) => {
     const alertasActualizadas = alertas.map((a) =>
       a.id === id ? { ...a, vista: true } : a
     );
     setAlertas(alertasActualizadas);
     localStorage.setItem("alertas_reactivacion", JSON.stringify(alertasActualizadas));
+    try {
+      await fetch("https://soingtel.onrender.com/api/alertas_reactivacion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alertas_reactivacion: [{ id, vista: true }] }),
+      });
+    } catch (e) {}
   };
 
-  const eliminarAlerta = (id: string) => {
+  const eliminarAlerta = async (id: string) => {
     const alertasActualizadas = alertas.filter((a) => a.id !== id);
     setAlertas(alertasActualizadas);
     localStorage.setItem("alertas_reactivacion", JSON.stringify(alertasActualizadas));
+    try {
+      await fetch("https://soingtel.onrender.com/api/alertas_reactivacion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alertas_reactivacion: [{ id, vista: true }] }),
+      });
+    } catch (e) {}
   };
 
   const alertasNuevas = alertas.filter((a) => !a.vista);
@@ -95,7 +144,19 @@ export function AlertasReactivacionModal({
       }
 
       toast.success("Cliente reactivado con estado confirmado", { description: "Kit: " + alerta.kit });
-      marcarComoVista(alerta.id);
+
+      // Remover de la lista local
+      const restantes = alertas.filter((a) => a.id !== alerta.id);
+      setAlertas(restantes);
+      localStorage.setItem("alertas_reactivacion", JSON.stringify(restantes));
+
+      // Intentar eliminar del servidor
+      try {
+        await fetch(`https://soingtel.onrender.com/api/alertas_reactivacion/${alerta.id}`, {
+          method: "DELETE",
+        });
+      } catch {}
+
       window.dispatchEvent(new CustomEvent('soingtel_reload_clientes'));
     } catch (e: any) {
       toast.error(e.message);
@@ -116,7 +177,13 @@ export function AlertasReactivacionModal({
         </DialogHeader>
 
         <ScrollArea className="h-[500px] pr-4">
-          {alertasNuevas.length === 0 && alertasVistas.length === 0 ? (
+          {loading && (
+            <div className="text-center py-8 text-muted-foreground">
+              <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2" />
+              <p className="text-sm">Cargando alertas...</p>
+            </div>
+          )}
+          {!loading && alertasNuevas.length === 0 && alertasVistas.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Power className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No hay alertas de reactivación</p>

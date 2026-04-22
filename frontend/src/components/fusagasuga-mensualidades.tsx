@@ -273,29 +273,23 @@ export function FusagasugaMensualidades({
     try {
       await crearCliente(cliente);
 
-      // 🔥 lo demás (alertas) lo puedes dejar igual
-
       if (userType === "soporte" || userType === "admin") {
-        const alertasActuales = localStorage.getItem("alertas_facturacion");
-        const alertas = alertasActuales ? JSON.parse(alertasActuales) : [];
-
-        const nuevaAlerta = {
-          id: `alerta-${Date.now()}`,
-          kit: cliente.kit,
-          nombre: cliente.nombrecliente,
-          cuenta: cliente.cuenta,
-          email: cliente.email,
-          fechaCreacion: new Date().toISOString(),
-          completada: false,
-        };
-
-        alertas.push(nuevaAlerta);
-        localStorage.setItem("alertas_facturacion", JSON.stringify(alertas));
-
-        const contadorActual = parseInt(
-          localStorage.getItem("alertas_count") || "0",
-        );
-        localStorage.setItem("alertas_count", (contadorActual + 1).toString());
+        // Guardar alerta en el backend para compartir entre usuarios
+        try {
+          await fetch("https://soingtel.onrender.com/api/alertas_facturacion/crear", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              kit: cliente.kit,
+              nombre: cliente.nombrecliente,
+              cuenta: cliente.cuenta,
+              email: cliente.email,
+              sede: "fusagasuga",
+            }),
+          });
+        } catch (alertaErr) {
+          console.warn("No se pudo crear alerta en servidor:", alertaErr);
+        }
       }
 
       toast.success("Cliente agregado exitosamente");
@@ -604,26 +598,26 @@ export function FusagasugaMensualidades({
     if (!selectedCliente) return;
 
     try {
-      // 1. Notificar a soporte (Generar Alerta Local o Base de Datos)
-      const alertasActuales = localStorage.getItem("alertas_suspension");
-      const alertas = alertasActuales ? JSON.parse(alertasActuales) : [];
+      // Guardar alerta en el backend para compartir entre usuarios
+      try {
+        await fetch("https://soingtel.onrender.com/api/alertas_suspension/crear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kit: selectedCliente.kit,
+            nombre: selectedCliente.nombrecliente || (selectedCliente as any).nombre_cliente,
+            cuenta: selectedCliente.cuenta,
+            email: selectedCliente.email,
+            motivo,
+            facturasVencidas: contarFacturasVencidas(selectedCliente),
+            sede: "fusagasuga",
+          }),
+        });
+      } catch (alertaErr) {
+        console.warn("No se pudo crear alerta de suspension en servidor:", alertaErr);
+      }
 
-      const nuevaAlerta = {
-        id: `suspension-${Date.now()}`,
-        kit: selectedCliente.kit,
-        nombre: selectedCliente.nombrecliente || (selectedCliente as any).nombre_cliente,
-        cuenta: selectedCliente.cuenta,
-        email: selectedCliente.email,
-        motivo,
-        facturasVencidas: contarFacturasVencidas(selectedCliente),
-        fechaSuspension: new Date().toISOString(),
-        vista: false,
-      };
-
-      alertas.push(nuevaAlerta);
-      localStorage.setItem("alertas_suspension", JSON.stringify(alertas));
-
-      await reloadClientes(); // Recargar lista de clientes
+      await reloadClientes();
       toast.success("Cliente suspendido correctamente y notificado a Soporte");
       setSuspenderClienteOpen(false);
     } catch (error: any) {
@@ -677,7 +671,7 @@ export function FusagasugaMensualidades({
   };
 
   // Función para reactivar cliente
-  const handleReactivarCliente = (kit: string) => {
+  const handleReactivarCliente = async (kit: string) => {
     const cliente = clientes.find((c) => c.kit === kit);
     if (!cliente) return;
 
@@ -690,24 +684,24 @@ export function FusagasugaMensualidades({
           new Date(a.fechaPago || a.fecha).getTime(),
       )[0];
 
-    // Crear alerta para soporte
-    const alertasActuales = localStorage.getItem("alertas_reactivacion");
-    const alertas = alertasActuales ? JSON.parse(alertasActuales) : [];
-
-    const nuevaAlerta = {
-      id: `reactivacion-${Date.now()}`,
-      kit: cliente.kit,
-      nombre: cliente.nombrecliente,
-      cuenta: cliente.cuenta,
-      email: cliente.email,
-      fechaReactivacion: new Date().toISOString(),
-      ultimoPago: ultimaFactura?.fechaPago || ultimaFactura?.fecha || "N/A",
-      metodoPago: ultimaFactura?.metodoPago || "No especificado",
-      vista: false,
-    };
-
-    alertas.push(nuevaAlerta);
-    localStorage.setItem("alertas_reactivacion", JSON.stringify(alertas));
+    // Crear alerta en el backend para compartir entre usuarios
+    try {
+      await fetch("https://soingtel.onrender.com/api/alertas_reactivacion/crear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kit: cliente.kit,
+          nombre: cliente.nombrecliente,
+          cuenta: cliente.cuenta,
+          email: cliente.email,
+          ultimoPago: ultimaFactura?.fechaPago || ultimaFactura?.fecha || "N/A",
+          metodoPago: ultimaFactura?.metodoPago || "No especificado",
+          sede: "fusagasuga",
+        }),
+      });
+    } catch (alertaErr) {
+      console.warn("No se pudo crear alerta de reactivacion en servidor:", alertaErr);
+    }
 
     toast.success(
       `Solicitud de reactivación enviada a Soporte para ${cliente.nombrecliente}`,
@@ -1032,6 +1026,7 @@ export function FusagasugaMensualidades({
                 <SelectItem value="suspendido">Suspendido</SelectItem>
                 <SelectItem value="en_dano">En Daño</SelectItem>
                 <SelectItem value="garantia">En Garantía</SelectItem>
+                <SelectItem value="sin_factura">Sin Facturas</SelectItem>
               </SelectContent>
             </Select>
 
@@ -1107,6 +1102,9 @@ export function FusagasugaMensualidades({
 
                 clientes
                   .filter((cliente) => {
+                    if (filterEstado === "sin_factura") {
+                      return !cliente.facturas || cliente.facturas.length === 0;
+                    }
                     const estadoCliente = calcularEstadoCliente(cliente);
                     return filterEstado === "todos" || estadoCliente === filterEstado;
                   }).map((cliente) => (

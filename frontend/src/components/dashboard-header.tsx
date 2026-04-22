@@ -56,20 +56,45 @@ export function DashboardHeader({
 
     // Cargar contador de alertas de reactivación y suspensión para soporte
     if (userType === "soporte" || userType === "admin") {
-      const cargarAlertasSoporte = () => {
-        const alertasGuardadas = localStorage.getItem("alertas_reactivacion");
-        if (alertasGuardadas) {
-          const alertas = JSON.parse(alertasGuardadas);
-          const noVistas = alertas.filter((a: any) => !a.vista).length;
-          setAlertasReactivacionCount(noVistas);
-        }
-
+      const cargarAlertasSoporte = async () => {
+        // Locales
+        const alertasReactivacion = localStorage.getItem("alertas_reactivacion");
         const alertasSuspension = localStorage.getItem("alertas_suspension");
+        let countReactivacion = 0;
+        let countSuspension = 0;
+
+        if (alertasReactivacion) {
+          const alertas = JSON.parse(alertasReactivacion);
+          countReactivacion = alertas.filter((a: any) => !a.vista).length;
+        }
         if (alertasSuspension) {
           const alertas = JSON.parse(alertasSuspension);
-          const noVistas = alertas.filter((a: any) => !a.vista).length;
-          setAlertasSuspensionCount(noVistas);
+          countSuspension = alertas.filter((a: any) => !a.vista).length;
         }
+
+        // Servidor
+        try {
+          const [resSusp, resReac] = await Promise.all([
+            fetch("https://soingtel.onrender.com/api/alertas_suspension"),
+            fetch("https://soingtel.onrender.com/api/alertas_reactivacion"),
+          ]);
+
+          if (resSusp.ok) {
+            const data = await resSusp.json();
+            const delServidor = (data.alertas_suspension || []).filter((a: any) => !a.vista).length;
+            countSuspension = countSuspension + delServidor;
+          }
+          if (resReac.ok) {
+            const data = await resReac.json();
+            const delServidor = (data.alertas_reactivacion || []).filter((a: any) => !a.vista).length;
+            countReactivacion = countReactivacion + delServidor;
+          }
+        } catch (e) {
+          // Silencioso — si falla el servidor, mostramos solo los locales
+        }
+
+        setAlertasReactivacionCount(countReactivacion);
+        setAlertasSuspensionCount(countSuspension);
       };
 
       cargarAlertasSoporte();
