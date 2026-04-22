@@ -1077,20 +1077,20 @@ export function FusagasugaMensualidades({
           </div>
         </div>
 
-        <div className="rounded-md border">
-          {errorClientes && <p className="text-red-500">{errorClientes}</p>}
-          <Table className="text-xs">
+        <div className="rounded-xl border bg-white dark:bg-[#0A1628]/60 overflow-hidden shadow-sm">
+          {errorClientes && <p className="text-red-500 p-4">{errorClientes}</p>}
+          <Table className="text-sm">
             <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-normal px-2">Kit</TableHead>
-                <TableHead className="whitespace-normal px-2">Cliente</TableHead>
-                <TableHead className="whitespace-normal px-2">Cuenta Starlink</TableHead>
-                <TableHead className="whitespace-normal px-2 hidden md:table-cell">Email</TableHead>
-                <TableHead className="whitespace-normal px-2">Fecha de Corte</TableHead>
-                <TableHead className="whitespace-normal px-2 text-center">Estado de Pago</TableHead>
-                <TableHead className="whitespace-normal px-2">Facturas</TableHead>
-                <TableHead className="whitespace-normal px-2 hidden md:table-cell">Observación</TableHead>
-                <TableHead className="whitespace-normal px-2">Acciones</TableHead>
+              <TableRow className="bg-cyan-50/50 dark:bg-[#0F2744]/50 border-b">
+                <TableHead className="px-4 py-3 font-semibold text-muted-foreground">Kit</TableHead>
+                <TableHead className="px-4 py-3 font-semibold text-muted-foreground">Cliente</TableHead>
+                <TableHead className="px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">Cuenta Starlink</TableHead>
+                <TableHead className="px-4 py-3 font-semibold text-muted-foreground hidden xl:table-cell">Email</TableHead>
+                <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-center">Corte</TableHead>
+                <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-center">Estado</TableHead>
+                <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-center">Facturas</TableHead>
+                <TableHead className="px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">Observación</TableHead>
+                <TableHead className="px-4 py-3 font-semibold text-muted-foreground">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

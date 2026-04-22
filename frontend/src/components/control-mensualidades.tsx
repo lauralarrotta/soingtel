@@ -909,11 +909,11 @@ const handleSaveClienteCompleto = async (
           </div>
         </div>
 
-        <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="rounded-xl border bg-white dark:bg-[#0A1628]/60 overflow-hidden shadow-sm">
           {errorClientes && <p className="text-red-500 p-4">{errorClientes}</p>}
           <Table className="text-sm">
             <TableHeader>
-              <TableRow className="bg-muted/50 border-b hover:bg-muted/50">
+              <TableRow className="bg-cyan-50/50 dark:bg-[#0F2744]/50 border-b">
                 <TableHead className="px-4 py-3 font-semibold text-muted-foreground">Kit</TableHead>
                 <TableHead className="px-4 py-3 font-semibold text-muted-foreground">Cliente</TableHead>
                 <TableHead className="px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">Cuenta Starlink</TableHead>

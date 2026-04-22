@@ -44,13 +44,13 @@ export default function DashboardSidebar({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "h-[calc(100vh-4rem)] border-r bg-[#0A1628]/60 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0A1628]/40",
-        "transition-[width] duration-300 ease-in-out relative z-40",
+        "h-[calc(100vh-4rem)] border-r bg-white dark:bg-[#0A1628]/90 backdrop-blur-xl",
+        "transition-[width] duration-300 ease-in-out relative z-40 shadow-sm",
         collapsed ? "w-16" : "w-56",
       )}
     >
-      {/* Glow effect on the right edge */}
-      <div className="absolute right-0 top-0 w-px h-full bg-gradient-to-b from-transparent via-cyan-500/30 to-transparent" />
+      {/* Cyan accent line */}
+      <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-cyan-500 via-cyan-400 to-cyan-500" />
 
       {/* Header */}
       <div className="flex items-center justify-between p-3 mt-1">
@@ -70,9 +70,9 @@ export default function DashboardSidebar({
         <button
           onClick={() => setIsLocked(!isLocked)}
           className={cn(
-            "rounded-lg p-2 transition-colors",
-            "hover:bg-cyan-50 hover:text-cyan-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50",
-            isLocked ? "bg-cyan-100 text-cyan-600" : "text-muted-foreground"
+            "rounded-lg p-2 transition-colors cursor-pointer",
+            "hover:bg-cyan-100 hover:text-cyan-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50",
+            isLocked ? "bg-cyan-100 text-cyan-600" : "text-slate-500"
           )}
           aria-label={isLocked ? "Desbloquear menú" : "Fijar menú abierto"}
           title={isLocked ? "Desfijar menú" : "Fijar menú abierto"}
@@ -98,15 +98,15 @@ export default function DashboardSidebar({
                   onClick={() => onSectionChange(item.id)}
                   title={collapsed ? item.label : undefined}
                   className={cn(
-                    "group relative w-full rounded-xl",
+                    "group relative w-full rounded-xl cursor-pointer",
                     "transition-all duration-200",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50",
                     collapsed
                       ? "flex justify-center p-3"
                       : "flex items-center gap-3 px-3 py-2.5",
                     isActive
-                      ? "bg-gradient-to-r from-cyan-500/20 to-transparent text-cyan-600 dark:text-cyan-400 shadow-lg shadow-cyan-500/10"
-                      : "text-slate-600 dark:text-slate-400 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-400",
+                      ? "bg-gradient-to-r from-cyan-500/20 to-transparent text-cyan-600 dark:text-cyan-400 shadow-md shadow-cyan-500/10 font-medium"
+                      : "text-slate-600 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-400",
                   )}
                 >
                   {/* Active indicator */}
