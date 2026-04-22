@@ -1,6 +1,7 @@
 import { Bell, User, LogOut, Globe, Ban, Power } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
+import { API_CONFIG } from "@/config";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,8 +77,8 @@ export function DashboardHeader({
         // Servidor
         try {
           const [resSusp, resReac] = await Promise.all([
-            fetch("https://soingtel.onrender.com/api/alertas_suspension"),
-            fetch("https://soingtel.onrender.com/api/alertas_reactivacion"),
+            fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`),
+            fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`),
           ]);
 
           if (resSusp.ok) {

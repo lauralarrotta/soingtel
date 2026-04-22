@@ -1,20 +1,23 @@
 import { Cliente } from "@/types/cliente";
-import { API_CONFIG, api } from "@/config";
+import { API_CONFIG } from "@/config";
 
-export const clientesService = {
+export const fusagasugaService = {
   crear: async (cliente: Cliente) => {
-    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes`, {
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(cliente),
     });
 
-    if (!res.ok) throw new Error("Error creando cliente");
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Error creando cliente");
+    }
     return res.json();
   },
 
   eliminar: async (kit: string) => {
-    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}`, {
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}`, {
       method: "DELETE",
     });
 
@@ -23,7 +26,7 @@ export const clientesService = {
   },
 
   actualizarEstado: async (kit: string, estado: string) => {
-    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}/estado`, {
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/estado`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ estado_pago: estado }),
@@ -34,13 +37,13 @@ export const clientesService = {
   },
 
   estadisticas: async () => {
-    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/estadisticas`);
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/estadisticas`);
     if (!res.ok) throw new Error("Error cargando estadísticas");
     return res.json();
   },
 
   exportar: async (clientes: any[]) => {
-    const res = await fetch(`${API_CONFIG.BASE_URL}/exportar-sheets`, {
+    const res = await fetch(`${API_CONFIG.BASE_URL}/exportar-sheets-fusagasuga`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clientes }),
@@ -51,7 +54,7 @@ export const clientesService = {
   },
 
   importar: async (clientes: any[], userType: string) => {
-    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/importar`, {
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/importar`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clientes, userType }),
@@ -62,7 +65,7 @@ export const clientesService = {
   },
 
   actualizarCliente: async (kit: string, data: any) => {
-    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}`, {
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -73,7 +76,7 @@ export const clientesService = {
   },
 
   actualizarObservacion: async (kit: string, observacion: string) => {
-    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}/observacion`, {
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/observacion`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ observacion }),
@@ -88,7 +91,7 @@ export const clientesService = {
   },
 
   actualizarEstadoFacturacion: async (kit: string, estado: string | null) => {
-    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}/facturacion`, {
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/facturacion`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

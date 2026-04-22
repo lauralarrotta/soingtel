@@ -2,7 +2,6 @@ const app = require("./app");
 const config = require("./config/env");
 const pool = require("./config/database");
 const logger = require("./shared/utils/logger");
-const { runMigrations } = require("./database/migrations");
 
 const PORT = config.port;
 let isShuttingDown = false;
@@ -39,13 +38,6 @@ process.on("uncaughtException", (err) => {
   logger.error("Uncaught exception:", err);
   gracefulShutdown("uncaughtException");
 });
-
-// Ejecutar migraciones al iniciar (solo en desarrollo)
-if (config.nodeEnv === "development") {
-  runMigrations().catch((err) => {
-    console.error("Error ejecutando migraciones:", err.message);
-  });
-}
 
 const server = app.listen(PORT, () => {
   logger.info(`
