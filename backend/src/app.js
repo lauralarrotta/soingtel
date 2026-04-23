@@ -31,6 +31,7 @@ app.use(rateLimit({
 
 // Middleware
 app.use(cors(config.cors));
+app.options("*", cors(config.cors))
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
