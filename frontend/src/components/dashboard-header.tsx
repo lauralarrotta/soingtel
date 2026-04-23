@@ -51,8 +51,8 @@ export function DashboardHeader({
 
       cargarAlertas();
 
-      // Actualizar cada segundo para reflejar cambios
-      const interval = setInterval(cargarAlertas, 1000);
+      // Actualizar cada 30 segundos para evitar rate limits
+      const interval = setInterval(cargarAlertas, 30000);
       return () => clearInterval(interval);
     }
 
@@ -105,8 +105,8 @@ export function DashboardHeader({
 
       cargarAlertasSoporte();
 
-      // Actualizar cada segundo para reflejar cambios
-      const interval = setInterval(cargarAlertasSoporte, 1000);
+      // Actualizar cada 30 segundos para evitar rate limits
+      const interval = setInterval(cargarAlertasSoporte, 30000);
       return () => clearInterval(interval);
     }
   }, [userType]);
