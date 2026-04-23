@@ -4,7 +4,7 @@ const { z } = require("zod");
 const envSchema = z.object({
   PORT: z.string().default("3001"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  CORS_ORIGINS: z.string().default("http://localhost:3000,http://localhost:5173,http://soingtel-git-develop-laura-larrottas-projects.vercel.app"),
+  CORS_ORIGINS: z.string().default("http://localhost:3000,http://localhost:5173,https://soingtel-git-develop-laura-larrottas-projects.vercel.app"),
   DATABASE_URL: z.string().optional(),
   DATABASE_SSL: z.enum(["true", "false"]).default("false"),
   GOOGLE_SHEET_ID: z.string().optional(),
