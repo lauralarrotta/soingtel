@@ -1,10 +1,9 @@
 import { Factura } from "@/types/cliente";
-
-const API = import.meta.env.VITE_API_URL;
+import { API_CONFIG } from "@/config";
 
 export const facturasService = {
   crear: async (kit: string, factura: Factura) => {
-    const res = await fetch(`${API}/clientes/${kit}/facturas`, {
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}/facturas`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(factura),
@@ -24,7 +23,7 @@ export const facturasService = {
     factura: Factura
   ) => {
     const res = await fetch(
-      `${API}/clientes/${kit}/facturas/${encodeURIComponent(numero)}`,
+      `${API_CONFIG.BASE_URL}/clientes/${kit}/facturas/${encodeURIComponent(numero)}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -42,7 +41,7 @@ export const facturasService = {
 
   eliminar: async (kit: string, numero: string) => {
     const res = await fetch(
-      `${API}/clientes/${kit}/facturas/${encodeURIComponent(numero)}`,
+      `${API_CONFIG.BASE_URL}/clientes/${kit}/facturas/${encodeURIComponent(numero)}`,
       {
         method: "DELETE",
       }
@@ -55,5 +54,4 @@ export const facturasService = {
 
     return true;
   },
- 
 };
