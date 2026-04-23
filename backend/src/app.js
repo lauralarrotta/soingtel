@@ -31,7 +31,7 @@ app.use(rateLimit({
 
 // Middleware
 app.use(cors(config.cors));
-app.options("*", cors(config.cors))
+app.options("*", cors(config.cors));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -40,15 +40,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
-app.use("/api", authRoutes);
-app.use("/api", authMiddleware, clientesRoutes);
-app.use("/api", authMiddleware, facturasRoutes);
-app.use("/api", authMiddleware, pagosRoutes);
-app.use("/api", authMiddleware, alertasRoutes);
-app.use("/api", debugRoutes);
-
-// Health
+// Health - sin auth, antes de las rutas protegidas
 app.get("/api/health", async (req, res) => {
   const health = {
     status: "ok",
@@ -68,6 +60,14 @@ app.get("/api/health", async (req, res) => {
   const statusCode = health.status === "ok" ? 200 : 503;
   return res.status(statusCode).json(health);
 });
+
+// Routes
+app.use("/api", authRoutes);
+app.use("/api", authMiddleware, clientesRoutes);
+app.use("/api", authMiddleware, facturasRoutes);
+app.use("/api", authMiddleware, pagosRoutes);
+app.use("/api", authMiddleware, alertasRoutes);
+app.use("/api", debugRoutes);
 
 // Exportar a Google Sheets
 app.post("/api/exportar-sheets", authMiddleware, async (req, res, next) => {
