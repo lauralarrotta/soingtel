@@ -82,5 +82,5 @@ app.post("/api/exportar-sheets", authMiddleware, async (req, res, next) => {
 
 // Error handler
 app.use(errorHandler);
-
+console.log("CORS Origins:", config.cors);
 module.exports = app;
