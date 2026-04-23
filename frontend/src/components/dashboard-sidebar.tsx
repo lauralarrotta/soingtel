@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
 import { BarChart3, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "./ui/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,6 +17,7 @@ export default function DashboardSidebar({
   const [isLocked, setIsLocked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
+  // El menú está colapsado si no está bloqueado (abierto fijamente) y tampoco tiene el cursor encima.
   const collapsed = !isLocked && !isHovered;
 
   const allMenuItems = [
@@ -26,14 +26,12 @@ export default function DashboardSidebar({
       label: "Control de Mensualidades",
       icon: BarChart3,
       roles: ["facturacion", "soporte", "admin"],
-      path: "/mensualidades",
     },
     {
       id: "fusagasuga",
       label: "Fusagasugá",
       icon: BarChart3,
       roles: ["facturacion", "soporte", "admin"],
-      path: "/fusagasuga",
     },
   ];
 
@@ -46,25 +44,22 @@ export default function DashboardSidebar({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "h-[calc(100vh-4rem)] border-r bg-white dark:bg-[#0A1628]/90 backdrop-blur-xl",
+        "h-[calc(100vh-4rem)] border-r bg-card/60 backdrop-blur supports-[backdrop-filter]:bg-card/50",
         "transition-[width] duration-300 ease-in-out relative z-40 shadow-sm",
-        collapsed ? "w-16" : "w-56",
+        collapsed ? "w-20" : "w-64",
       )}
     >
-      {/* Cyan accent line */}
-      <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-cyan-500 via-cyan-400 to-cyan-500" />
-
       {/* Header */}
       <div className="flex items-center justify-between p-3 mt-1">
         <AnimatePresence initial={false}>
           {!collapsed && (
             <motion.span
-              initial={{ opacity: 0, x: -10 }}
+              initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="px-2 text-[9px] font-bold tracking-[0.2em] text-cyan-400/60 uppercase"
+              exit={{ opacity: 0, x: -8 }}
+              className="px-2 text-xs font-semibold tracking-wide text-muted-foreground"
             >
-              Menú
+              MENÚ
             </motion.span>
           )}
         </AnimatePresence>
@@ -72,9 +67,9 @@ export default function DashboardSidebar({
         <button
           onClick={() => setIsLocked(!isLocked)}
           className={cn(
-            "rounded-lg p-2 transition-colors cursor-pointer",
-            "hover:bg-cyan-100 hover:text-cyan-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50",
-            isLocked ? "bg-cyan-100 text-cyan-600" : "text-slate-500"
+            "rounded-lg p-2 transition-colors",
+            "hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            isLocked ? "bg-accent/50 text-primary" : "text-muted-foreground"
           )}
           aria-label={isLocked ? "Desbloquear menú" : "Fijar menú abierto"}
           title={isLocked ? "Desfijar menú" : "Fijar menú abierto"}
@@ -92,58 +87,53 @@ export default function DashboardSidebar({
         <ul className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isActive = activeSection === item.id;
 
             return (
               <li key={item.id}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    cn(
-                      "group relative w-full rounded-xl cursor-pointer block",
-                      "transition-all duration-200",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50",
-                      collapsed
-                        ? "flex justify-center p-3"
-                        : "flex items-center gap-3 px-3 py-2.5",
-                      isActive || activeSection === item.id
-                        ? "bg-gradient-to-r from-cyan-500/20 to-transparent text-cyan-600 dark:text-cyan-400 shadow-md shadow-cyan-500/10 font-medium"
-                        : "text-slate-600 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-400",
-                    )
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      {/* Active indicator */}
-                      {(isActive || activeSection === item.id) && (
-                        <motion.div
-                          layoutId="sidebar-active-pill"
-                          className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-cyan-400 to-cyan-500 shadow-lg shadow-cyan-500/30"
-                        />
-                      )}
-
-                      <Icon
-                        className={cn(
-                          "h-5 w-5 shrink-0 transition-transform duration-200",
-                          "group-hover:scale-110",
-                          isActive || activeSection === item.id ? "text-cyan-400" : ""
-                        )}
-                      />
-
-                      <AnimatePresence initial={false}>
-                        {!collapsed && (
-                          <motion.span
-                            initial={{ opacity: 0, width: 0 }}
-                            animate={{ opacity: 1, width: "auto" }}
-                            exit={{ opacity: 0, width: 0 }}
-                            className="truncate text-sm"
-                          >
-                            {item.label}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </>
+                <button
+                  onClick={() => onSectionChange(item.id)}
+                  title={collapsed ? item.label : undefined}
+                  className={cn(
+                    "group relative w-full rounded-xl",
+                    "transition-all duration-200",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    collapsed
+                      ? "flex justify-center p-3"
+                      : "flex items-center gap-3 px-3 py-2.5",
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-sm font-medium"
+                      : "text-foreground hover:bg-accent/80 hover:text-accent-foreground",
                   )}
-                </NavLink>
+                >
+                  {/* Active indicator */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active-pill"
+                      className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-primary"
+                    />
+                  )}
+
+                  <Icon
+                    className={cn(
+                      "h-5 w-5 shrink-0 transition-transform duration-200",
+                      "group-hover:scale-110",
+                    )}
+                  />
+
+                  <AnimatePresence initial={false}>
+                    {!collapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        className="truncate text-sm"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </button>
               </li>
             );
           })}

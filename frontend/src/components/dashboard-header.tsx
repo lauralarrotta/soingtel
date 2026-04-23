@@ -1,7 +1,6 @@
 import { Bell, User, LogOut, Globe, Ban, Power } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { API_CONFIG } from "@/config";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +8,6 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Badge } from "./ui/badge";
-import { motion } from "framer-motion";
 
 interface DashboardHeaderProps {
   userType: string;
@@ -75,15 +73,10 @@ export function DashboardHeader({
         }
 
         // Servidor
-        const token = localStorage.getItem("token");
         try {
           const [resSusp, resReac] = await Promise.all([
-            fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
+            fetch("https://soingtel.onrender.com/api/alertas_suspension"),
+            fetch("https://soingtel.onrender.com/api/alertas_reactivacion"),
           ]);
 
           if (resSusp.ok) {
@@ -126,46 +119,33 @@ export function DashboardHeader({
   };
 
   return (
-    <header className="h-16 border-b bg-[#0A1628]/80 backdrop-blur-xl flex items-center justify-between px-6 sticky top-0 z-50 shadow-lg shadow-black/20">
+    <header className="h-16 border-b bg-card flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 via-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
-              <Globe className="h-6 w-6 text-white" />
-            </div>
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl blur opacity-30 -z-10" />
+          <div className="w-10 h-10 bg-gradient-to-br from-[#45A29E] to-[#66FCF1] rounded-lg flex items-center justify-center">
+            <Globe className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-tight text-white">Soingtel</h1>
-            <p className="text-[9px] text-cyan-400/70 uppercase tracking-widest">Starlink Management</p>
+            <h1 className="text-lg">Soingtel</h1>
+            <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        {/* Status indicator */}
-        <div className="hidden sm:flex items-center gap-2 mr-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20">
-          <motion.div
-            animate={{ opacity: [1, 0.5, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-1.5 h-1.5 rounded-full bg-cyan-400"
-          />
-          <span className="text-[10px] text-cyan-400/80 uppercase tracking-wider">Online</span>
-        </div>
-
+      <div className="flex items-center gap-3">
         {/* Alertas para Facturación y Admin */}
         {(userType === "facturacion" || userType === "admin") && (
           <>
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="relative text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10"
+              className="relative"
               onClick={onOpenAlertas}
               title="Nuevos clientes - Requieren factura"
             >
               <Bell className="h-5 w-5" />
               {alertasCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-orange-500 text-white rounded-full shadow-lg shadow-orange-500/30 animate-pulse">
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-orange-500">
                   {alertasCount}
                 </Badge>
               )}
@@ -177,30 +157,30 @@ export function DashboardHeader({
         {(userType === "soporte" || userType === "admin") && (
           <>
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="relative text-slate-400 hover:text-green-400 hover:bg-green-500/10"
+              className="relative"
               onClick={onOpenAlertasReactivacion}
               title="Clientes para reactivar"
             >
-              <Power className="h-5 w-5" />
+              <Power className="h-5 w-5 text-green-600" />
               {alertasReactivacionCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-green-500 text-white rounded-full shadow-lg shadow-green-500/30 animate-pulse">
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-green-500">
                   {alertasReactivacionCount}
                 </Badge>
               )}
             </Button>
 
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="relative text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+              className="relative"
               onClick={onOpenAlertasSuspension}
               title="Clientes para suspender - Requieren atención"
             >
-              <Ban className="h-5 w-5" />
+              <Ban className="h-5 w-5 text-red-600" />
               {alertasSuspensionCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-red-500 text-white rounded-full shadow-lg shadow-red-500/30 animate-pulse">
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500">
                   {alertasSuspensionCount}
                 </Badge>
               )}
@@ -209,11 +189,10 @@ export function DashboardHeader({
         )}
 
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={onToggleTheme}
-          title={currentTheme === "dark" ? "Modo Claro" : "Modo Oscuro"}
-          className="text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10"
+          title={currentTheme === "dark" ? "Cambiar a Modo Claro" : "Cambiar a Modo Oscuro"}
         >
           {currentTheme === "dark" ? (
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
@@ -222,19 +201,15 @@ export function DashboardHeader({
           )}
         </Button>
 
-        <div className="w-px h-6 bg-slate-700 mx-1" />
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="gap-2 text-slate-400 hover:text-white hover:bg-slate-800/50 px-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <User className="h-4 w-4 text-white" />
-              </div>
-              <span className="hidden md:inline text-sm font-medium">{getUserName()}</span>
+            <Button variant="outline" className="gap-2">
+              <User className="h-4 w-4" />
+              {getUserName()}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-[#0A1628] border-cyan-500/20 shadow-xl shadow-cyan-500/10">
-            <DropdownMenuItem onClick={onLogout} className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer">
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onLogout} className="text-destructive">
               <LogOut className="h-4 w-4 mr-2" />
               Cerrar Sesión
             </DropdownMenuItem>

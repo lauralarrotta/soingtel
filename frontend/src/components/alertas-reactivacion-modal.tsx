@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { API_CONFIG } from "@/config";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +55,7 @@ export function AlertasReactivacionModal({
   const cargarAlertas = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`);
+      const res = await fetch("https://soingtel.onrender.com/api/alertas_reactivacion");
       if (res.ok) {
         const data = await res.json();
         const delServidor: AlertaReactivacion[] = (data.alertas_reactivacion || [])
@@ -101,7 +100,7 @@ export function AlertasReactivacionModal({
     setAlertas(alertasActualizadas);
     localStorage.setItem("alertas_reactivacion", JSON.stringify(alertasActualizadas));
     try {
-      await fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, {
+      await fetch("https://soingtel.onrender.com/api/alertas_reactivacion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alertas_reactivacion: [{ id, vista: true }] }),
@@ -114,7 +113,7 @@ export function AlertasReactivacionModal({
     setAlertas(alertasActualizadas);
     localStorage.setItem("alertas_reactivacion", JSON.stringify(alertasActualizadas));
     try {
-      await fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, {
+      await fetch("https://soingtel.onrender.com/api/alertas_reactivacion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alertas_reactivacion: [{ id, vista: true }] }),
@@ -132,7 +131,7 @@ export function AlertasReactivacionModal({
   const ejecutarReactivacion = async (alerta: AlertaReactivacion) => {
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/clientes/${alerta.kit}/estado`,
+        `https://soingtel.onrender.com/api/clientes/${alerta.kit}/estado`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -153,7 +152,7 @@ export function AlertasReactivacionModal({
 
       // Intentar eliminar del servidor
       try {
-        await fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion/${alerta.id}`, {
+        await fetch(`https://soingtel.onrender.com/api/alertas_reactivacion/${alerta.id}`, {
           method: "DELETE",
         });
       } catch {}

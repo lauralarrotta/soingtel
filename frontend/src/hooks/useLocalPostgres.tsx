@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { fetchWithRetry } from "../utils/fetchWithRetry";
-import { API_CONFIG } from "@/config";
+
+// URL del backend local
+const API_URL = "https://soingtel.onrender.com/api";
 
 function safeParse<T>(value: string | null, fallback: T): T {
   try {
@@ -33,7 +35,7 @@ export function useLocalPostgres<T>(
   // Verificar si el servidor está disponible
   const checkServerHealth = useCallback(async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/health`, {
+      const response = await fetch(`${API_URL}/health`, {
         signal: AbortSignal.timeout(3000),
       });
       const isAvailable = response.ok;
@@ -77,9 +79,9 @@ export function useLocalPostgres<T>(
         return;
       }
 
-      console.log(`[useLocalPostgres] Cargando ${key} desde ${API_CONFIG.BASE_URL}/${key} (page: ${page}, limit: ${limit})`);
+      console.log(`[useLocalPostgres] Cargando ${key} desde ${API_URL}/${key} (page: ${page}, limit: ${limit})`);
 
-   let url = `${API_CONFIG.BASE_URL}/${key}?page=${pageState}&limit=${limit}`;
+   let url = `${API_URL}/${key}?page=${pageState}&limit=${limit}`;
 
 // ✅ agregar filtros dinámicos
 if (filters) {
@@ -236,7 +238,7 @@ if (key === "clientes" || key === "clientes_fusagasuga") {
         }
 
         console.log("Enviando al backend:", dataToSend);
-        const response = await fetch(`${API_CONFIG.BASE_URL}/${key}`, {
+        const response = await fetch(`${API_URL}/${key}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

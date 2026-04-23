@@ -7,243 +7,170 @@ Desarrollada con arquitectura modular para facilitar mantenimiento, escalabilida
 
 ## 🧠 Stack Tecnológico
 
-- **Runtime:** Node.js 18+
-- **Framework:** Express.js 4.x
-- **Database:** PostgreSQL 14+
-- **Validation:** Zod 4.x
-- **Security:** Helmet, CORS, express-rate-limit
-- **Logging:** Winston
-- **Testing:** Jest
-- **Language:** JavaScript (ES6+) con soporte TypeScript
+- Node.js
+- Express
+- TypeScript
+- PostgreSQL
+- Arquitectura Modular (Routes / Controllers / Services)
 
 ---
 
 ## 📁 Estructura del Proyecto
 
-```
 backend/
 ├── src/
-│   ├── config/
-│   │   ├── database.js       # PostgreSQL connection pool
-│   │   └── env.js            # Environment validation with Zod
-│   │
-│   ├── database/
-│   │   ├── schema.sql        # Database schema
-│   │   └── migrations/       # Database migrations
-│   │
-│   ├── integrations/
-│   │   └── googleSheets/     # Google Sheets export
-│   │
-│   ├── modules/
-│   │   ├── auth/             # Authentication
-│   │   ├── clientes/        # Clients (CRUD + sede support)
-│   │   ├── facturas/        # Invoices
-│   │   ├── pagos/            # Payments
-│   │   └── alertas/          # Alerts
-│   │
-│   ├── routes/               # Route aggregation
-│   ├── shared/
-│   │   ├── constants/        # App constants
-│   │   ├── errors/          # Custom error classes
-│   │   ├── middleware/       # Auth & error handlers
-│   │   ├── utils/           # Logger, ApiResponse, helpers
-│   │   └── validations/      # Input validation helpers
-│   ├── tests/               # Test files
-│   ├── app.js               # Express app setup
-│   └── server.js            # Server entry point
+│ ├── config/
+│ │ └── database.ts
+│ │
+│ ├── database/
+│ │ ├── schema.sql
+│ │ └── migrations/
+│ │
+│ ├── middlewares/
+│ │ ├── logger.middleware.ts
+│ │ └── error.middleware.ts
+│ │
+│ ├── modules/
+│ │ ├── clientes/
+│ │ │ ├── clientes.routes.ts
+│ │ │ ├── clientes.controller.ts
+│ │ │ └── clientes.service.ts
+│ │ │
+│ │ ├── facturas/
+│ │ │ ├── facturas.routes.ts
+│ │ │ ├── facturas.controller.ts
+│ │ │ └── facturas.service.ts
+│ │ │
+│ │ ├── pagos/
+│ │ │ ├── pagos.routes.ts
+│ │ │ ├── pagos.controller.ts
+│ │ │ └── pagos.service.ts
+│ │ │
+│ │ ├── alertas/
+│ │ │ ├── alertas.routes.ts
+│ │ │ ├── alertas.controller.ts
+│ │ │ └── alertas.service.ts
+│ │ │
+│ │ └── health/
+│ │ ├── health.routes.ts
+│ │ └── health.controller.ts
+│ │
+│ ├── shared/
+│ │ └── helpers.ts
+│ │
+│ ├── app.ts
+│ └── server.ts
 │
-├── .editorconfig           # Editor configuration
-├── .env.example            # Environment template
-├── .eslintrc.json          # ESLint config
-├── .gitignore              # Git ignore rules
-├── .prettierrc             # Prettier config
-├── CHANGELOG.md            # Version history
-├── CONTRIBUTING.md         # Contribution guidelines
-├── docker-compose.yml       # PostgreSQL setup
-├── jest.config.js          # Jest config
+├── .env
+├── .gitignore
 ├── package.json
-├── README.md
-└── tsconfig.json          # TypeScript config
-```
+└── README.md
 
 ---
 
-## ⚙️ Configuración
+## ⚙️ Variables de Entorno
 
-### 1. Variables de Entorno
+Crear un archivo `.env` en la raíz del proyecto:
 
-Crear archivo `.env` basado en `.env.example`:
+PORT=3001
 
-```bash
-cp .env.example .env
-```
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=tu_password
+DB_NAME=soingtel_db
 
-Variables principales:
+---
 
-| Variable | Descripción | Valor por defecto |
-|----------|-------------|-------------------|
-| `PORT` | Puerto del servidor | `3001` |
-| `NODE_ENV` | Entorno | `development` |
-| `DATABASE_URL` | Connection string PostgreSQL | - |
-| `DATABASE_SSL` | Usar SSL | `false` |
-| `RATE_LIMIT_WINDOW_MS` | Ventana rate limit (ms) | `900000` |
-| `RATE_LIMIT_MAX` | Máx requests por ventana | `100` |
-| `CORS_ORIGINS` | Orígenes CORS (coma) | localhost:3000,5173 |
-| `USERS` | Usuarios auth (user:pass:rol) | soporte, facturacion, admin |
+## 📦 Instalación
 
-### 2. Base de Datos
-
-Opción A: Docker Compose (recomendado)
-```bash
-docker-compose up -d
-```
-
-Opción B: PostgreSQL local
-- Crear base de datos: `soingtel`
-- Actualizar `DATABASE_URL` en `.env`
-
-### 3. Instalar Dependencias
-
-```bash
 npm install
-```
 
 ---
 
-## 🛠️ Scripts Disponibles
+## 🛠️ Desarrollo
 
-| Script | Descripción |
-|--------|-------------|
-| `npm run dev` | Iniciar en desarrollo (con hot reload) |
-| `npm start` | Iniciar en producción |
-| `npm test` | Ejecutar tests |
-| `npm run build` | Compilar TypeScript |
+npm run dev
 
 ---
 
-## 🌐 Endpoints API
+## 🏗️ Compilar TypeScript
 
-### Autenticación
-```
-POST /api/auth          # Login (Basic Auth)
-```
-
-### Clientes
-```
-GET    /api/clientes                  # Listar clientes
-GET    /api/clientes/:kit             # Obtener por KIT
-POST   /api/clientes                  # Crear cliente
-PUT    /api/clientes/:kit             # Actualizar
-PUT    /api/clientes/:kit/estado       # Cambiar estado pago
-PUT    /api/clientes/:kit/facturacion  # Actualizar facturación
-DELETE /api/clientes/:kit             # Eliminar
-POST   /api/clientes/importar          # Importar CSV
-GET    /api/clientes/estadisticas      # Estadísticas
-
-# Fusagasuga (sede alterna)
-GET    /api/clientes_fusagasuga/...
-```
-
-### Facturas
-```
-GET    /api/facturas            # Listar facturas
-GET    /api/facturas/:id        # Obtener por ID
-POST   /api/facturas            # Crear factura
-PUT    /api/facturas/:id        # Actualizar
-DELETE /api/facturas/:id        # Eliminar
-```
-
-### Pagos
-```
-GET    /api/pagos               # Listar pagos
-GET    /api/pagos/:id           # Obtener por ID
-POST   /api/pagos               # Registrar pago
-```
-
-### Alertas
-```
-GET    /api/alertas/facturacion # Alertas de facturación
-GET    /api/alertas/suspension  # Alertas de suspensión
-GET    /api/alertas/reactivacion # Alertas de reactivación
-```
-
-### Utilidades
-```
-GET    /api/health              # Health check
-POST   /api/exportar-sheets     # Exportar a Google Sheets
-```
+npm run build
 
 ---
 
-## 🔐 Seguridad
+## ▶️ Ejecutar en Producción
 
-- **Autenticación:** HTTP Basic Auth
-- **CORS:** Configurable por origen
-- **Rate Limiting:** 100 requests / 15 minutos
-- **Helmet:** Headers de seguridad HTTP
-- **Validation:** Zod para validación de entrada
-- **SQL:** Prepared statements (pg library)
+npm start
+
+---
+
+## 🌐 Endpoints Disponibles
+
+### ❤️ Health
+
+GET /api/health
+
+### 👥 Clientes
+
+GET /api/clientes
+POST /api/clientes
+PUT /api/clientes/:kit
+
+### 🧾 Facturas
+
+GET /api/facturas
+POST /api/facturas
+
+### 💳 Pagos
+
+GET /api/pagos
+
+### 🚨 Alertas
+
+GET /api/alertas
 
 ---
 
 ## 🧱 Arquitectura
 
-```
-Request → Route → Middleware → Controller → Service → Repository → Database
-                                              ↓
-                                         Validation
-```
+Cada módulo sigue el patrón:
 
-Cada módulo sigue el patrón MVC simplificado:
-- **Routes:** Definición de endpoints y middleware
-- **Controller:** Manejo de HTTP (request/response)
-- **Service:** Lógica de negocio
-- **Repository:** Acceso a datos
+routes → endpoints
+controller → manejo HTTP
+service → lógica de negocio + base de datos
 
 ---
 
-## 🧪 Testing
+## 🔐 Uso Interno
 
-```bash
-# Todos los tests
-npm test
-
-# Modo watch
-npm run test:watch
-
-# Coverage
-npm test -- --coverage
-```
+Sistema diseñado para uso interno de la empresa.
 
 ---
 
-## 🐳 Docker
+## 🧪 Scripts
 
-```bash
-# Iniciar PostgreSQL
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
-
-# Detener
-docker-compose down
-```
+"scripts": {
+"dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+"build": "tsc",
+"start": "node dist/server.js"
+}
 
 ---
 
-## 📝 Historial de Versiones
+## 🚀 Roadmap
 
-Ver [CHANGELOG.md](./CHANGELOG.md) para detalles de cambios.
+- Autenticación JWT
+- Roles y permisos
+- Documentación Swagger
+- Logs avanzados
+- Docker
+- Deploy en nube
+- Monitoreo y métricas
 
 ---
 
-## 🤝 Contribuir
-
-Ver [CONTRIBUTING.md](./CONTRIBUTING.md) para guías de contribución.
-
----
-
-## 📄 Licencia
+## 👩‍💻 Autora
 
 Proyecto interno — Soingtel

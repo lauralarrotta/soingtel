@@ -36,7 +36,6 @@ import {
   TableRow,
 } from "./ui/table";
 import { Badge } from "./ui/badge";
-import { Card, CardContent } from "./ui/card";
 import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
 import { NuevoClienteModal } from "./nuevo-cliente-modal";
 import { HistorialFacturasModal } from "./historial-facturas-modal";
@@ -55,11 +54,41 @@ import { DashboardStats } from "./dashboard-stats";
 import { ContadorCorte } from "./contador-corte";
 import { toast } from "sonner";
 import { useDatabase } from "../hooks/useDatabase";
-import { fusagasugaService } from "@/services/fusagasugaService";
-import { alertasService } from "@/services/alertasService";
-import { facturasService } from "@/services/facturasService";
-import { API_CONFIG } from "@/config";
-import { EstadoFacturacion, Factura, Cliente } from "@/types/cliente";
+
+type EstadoFacturacion = "pendiente" | "facturado" | "ROC" | "PPC" | null;
+
+interface Factura {
+  numero: string;
+  fecha: string;
+  valor: number;
+  estadoPago: "pagado" | "pendiente" | "vencido" | "roc" | "ppc";
+  metodoPago?: string;
+  fechaPago?: string;
+  periodo?: string;
+}
+
+interface Cliente {
+  kit: string;
+  nombrecliente: string;
+  cuenta: string;
+  cuentastarlink?: string;
+  cuenta_starlink?: string;
+  coordenadas?: string;
+  email: string;
+  contrasena?: string;
+  fechaActivacion?: string;
+  corte: number;
+  corteFacturacion?: number;
+  estado_pago: "confirmado" | "pendiente" | "suspendido" | "en_dano" | "garantia" | "transferida" | string;
+  estado_facturacion?: EstadoFacturacion;
+  observaciones: string;
+  costo: string;
+  valorFacturar?: string;
+  valorSoporte?: string;
+  tipoSoporte?: string;
+  facturas?: Factura[];
+}
+
 
 interface FusagasugaMensualidadesProps {
   userType?: string;
@@ -108,8 +137,10 @@ export function FusagasugaMensualidades({
 
   const cargarEstadisticas = async () => {
     try {
-      const data = await fusagasugaService.estadisticas();
-      setEstadisticas(data);
+      const res = await fetch("https://soingtel.onrender.com/api/clientes_fusagasuga/estadisticas");
+      if (res.ok) {
+        setEstadisticas(await res.json());
+      }
     } catch { }
   };
 
@@ -141,8 +172,7 @@ export function FusagasugaMensualidades({
 
   useEffect(() => {
     cargarEstadisticas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [clientes]);
 
   useEffect(() => {
     const handleReload = () => {
@@ -179,14 +209,42 @@ export function FusagasugaMensualidades({
       ...cliente
     };
 
-    const data = await fusagasugaService.crear(payload);
+    const response = await fetch("https://soingtel.onrender.com/api/clientes_fusagasuga", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Error creando cliente");
+    }
+
     await reloadClientes(); // 🔥 sincroniza con servidor
   };
 
   const exportarExcelBackend = async () => {
     try {
-      const data = await fusagasugaService.exportar(clientes);
+      const response = await fetch(
+        "https://soingtel.onrender.com/api/exportar-sheets",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ clientes }), // 👈 envías los clientes actuales
+        },
+      );
 
+      if (!response.ok) {
+        throw new Error("Error exportando Excel");
+      }
+
+      const data = await response.json();
+
+      // 🔥 OPCIONAL: si el backend devuelve un link
       if (data.url) {
         window.open(data.url, "_blank");
       }
@@ -218,12 +276,16 @@ export function FusagasugaMensualidades({
       if (userType === "soporte" || userType === "admin") {
         // Guardar alerta en el backend para compartir entre usuarios
         try {
-          await alertasService.crearFacturacion({
-            kit: cliente.kit,
-            nombre: cliente.nombrecliente,
-            cuenta: cliente.cuenta,
-            email: cliente.email,
-            sede: "fusagasuga",
+          await fetch("https://soingtel.onrender.com/api/alertas_facturacion/crear", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              kit: cliente.kit,
+              nombre: cliente.nombrecliente,
+              cuenta: cliente.cuenta,
+              email: cliente.email,
+              sede: "fusagasuga",
+            }),
           });
         } catch (alertaErr) {
           console.warn("No se pudo crear alerta en servidor:", alertaErr);
@@ -240,7 +302,19 @@ export function FusagasugaMensualidades({
     try {
       console.log("CLIENTES ENVIADOS AL BACKEND:", clientesImportados);
 
-      const response = await fusagasugaService.importar(clientesImportados, userType || "soporte");
+      const response = await fetch(
+        "https://soingtel.onrender.com/api/clientes_fusagasuga/importar",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            clientes: clientesImportados,
+            userType,
+          }),
+        },
+      );
 
       console.log("STATUS RESPUESTA:", response.status);
 
@@ -264,7 +338,7 @@ export function FusagasugaMensualidades({
   const handleSaveFactura = async (kit: string, factura: Factura) => {
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/facturas`,
+        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/facturas`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -315,7 +389,7 @@ export function FusagasugaMensualidades({
     facturaEditada: Factura,
   ) => {
     const response = await fetch(
-      `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/facturas/${numeroOriginal}`,
+      `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/facturas/${numeroOriginal}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -338,7 +412,7 @@ export function FusagasugaMensualidades({
 
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${selectedCliente.kit}/facturas/${factura.numero}`,
+        `https://soingtel.onrender.com/api/clientes_fusagasuga/${selectedCliente.kit}/facturas/${factura.numero}`,
         {
           method: "DELETE",
         }
@@ -365,7 +439,7 @@ export function FusagasugaMensualidades({
   ) => {
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/facturas/${numeroFactura}`,
+        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/facturas/${numeroFactura}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -391,7 +465,7 @@ export function FusagasugaMensualidades({
   const handleSaveObservacion = async (kit: string, observacion: string) => {
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/observacion`,
+        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/observacion`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -421,7 +495,7 @@ export function FusagasugaMensualidades({
   ) => {
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/estado`,
+        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/estado`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -455,7 +529,7 @@ export function FusagasugaMensualidades({
 
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${selectedCliente.kit}`,
+        `https://soingtel.onrender.com/api/clientes_fusagasuga/${selectedCliente.kit}`,
         { method: "DELETE" },
       );
 
@@ -482,7 +556,7 @@ export function FusagasugaMensualidades({
   ) => {
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kitOriginal}`,
+        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kitOriginal}`,
         {
           method: "PUT",
           headers: {
@@ -526,14 +600,18 @@ export function FusagasugaMensualidades({
     try {
       // Guardar alerta en el backend para compartir entre usuarios
       try {
-        await alertasService.crearSuspension({
-          kit: selectedCliente.kit,
-          nombre: selectedCliente.nombrecliente || (selectedCliente as any).nombre_cliente,
-          cuenta: selectedCliente.cuenta,
-          email: selectedCliente.email,
-          motivo,
-          facturasVencidas: contarFacturasVencidas(selectedCliente),
-          sede: "fusagasuga",
+        await fetch("https://soingtel.onrender.com/api/alertas_suspension/crear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kit: selectedCliente.kit,
+            nombre: selectedCliente.nombrecliente || (selectedCliente as any).nombre_cliente,
+            cuenta: selectedCliente.cuenta,
+            email: selectedCliente.email,
+            motivo,
+            facturasVencidas: contarFacturasVencidas(selectedCliente),
+            sede: "fusagasuga",
+          }),
         });
       } catch (alertaErr) {
         console.warn("No se pudo crear alerta de suspension en servidor:", alertaErr);
@@ -553,7 +631,7 @@ export function FusagasugaMensualidades({
   ) => {
     try {
       const res = await fetch(
-        `${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/facturacion`,
+        `https://soingtel.onrender.com/api/clientes_fusagasuga/${kit}/facturacion`,
         {
           method: "PUT",
           headers: {
@@ -608,14 +686,18 @@ export function FusagasugaMensualidades({
 
     // Crear alerta en el backend para compartir entre usuarios
     try {
-      await alertasService.crearReactivacion({
-        kit: cliente.kit,
-        nombre: cliente.nombrecliente,
-        cuenta: cliente.cuenta,
-        email: cliente.email,
-        ultimoPago: ultimaFactura?.fechaPago || ultimaFactura?.fecha || "N/A",
-        metodoPago: ultimaFactura?.metodoPago || "No especificado",
-        sede: "fusagasuga",
+      await fetch("https://soingtel.onrender.com/api/alertas_reactivacion/crear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kit: cliente.kit,
+          nombre: cliente.nombrecliente,
+          cuenta: cliente.cuenta,
+          email: cliente.email,
+          ultimoPago: ultimaFactura?.fechaPago || ultimaFactura?.fecha || "N/A",
+          metodoPago: ultimaFactura?.metodoPago || "No especificado",
+          sede: "fusagasuga",
+        }),
       });
     } catch (alertaErr) {
       console.warn("No se pudo crear alerta de reactivacion en servidor:", alertaErr);
@@ -759,73 +841,57 @@ export function FusagasugaMensualidades({
       />
 
       {/* Tarjetas Principales de Control */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <Card
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <Alert
           onClick={() => setActiveCardFilter("todos")}
-          className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "todos" ? "ring-2 ring-cyan-500" : "hover:shadow-md"}`}
+          className={`cursor-pointer transition-all h-full ${activeCardFilter === "todos" ? "bg-blue-50 border-blue-400 [&>svg]:text-blue-600" : "hover:border-blue-300 hover:bg-blue-50/50"}`}
         >
-          <div className="h-1 bg-gradient-to-r from-cyan-500 to-cyan-400" />
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <BarChart3 className="h-5 w-5 text-cyan-500" />
-              <Badge variant="outline" className="text-[10px] bg-cyan-50 text-cyan-600 border-cyan-200">Activos</Badge>
-            </div>
-            <div className="text-3xl font-bold">{estadisticas.total}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total Activos</p>
-          </CardContent>
-        </Card>
+          <BarChart3 className="h-4 w-4" />
+          <AlertTitle className="text-sm font-semibold tracking-tight text-muted-foreground uppercase">Total Activos</AlertTitle>
+          <AlertDescription className="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">
+            {estadisticas.total}
+          </AlertDescription>
+        </Alert>
 
-        <Card
+        <Alert
           onClick={() => setActiveCardFilter("ppc")}
-          className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "ppc" ? "ring-2 ring-orange-500" : "hover:shadow-md"}`}
+          className={`cursor-pointer transition-all h-full ${activeCardFilter === "ppc" ? "bg-orange-50 border-orange-400 [&>svg]:text-orange-600" : "hover:border-orange-300 hover:bg-orange-50/50"}`}
         >
-          <div className="h-1 bg-gradient-to-r from-orange-500 to-orange-400" />
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <PauseCircle className="h-5 w-5 text-orange-500" />
-              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-600 border-orange-200">PPC</Badge>
-            </div>
-            <div className="text-3xl font-bold text-orange-600">{estadisticas.ppc}</div>
-            <p className="text-xs text-muted-foreground mt-1">Pausados</p>
-          </CardContent>
-        </Card>
+          <PauseCircle className="h-4 w-4" />
+          <AlertTitle className="text-sm font-semibold tracking-tight text-muted-foreground uppercase">Pausados (PPC)</AlertTitle>
+          <AlertDescription className="text-2xl font-bold text-orange-600 mt-1">
+            {estadisticas.ppc}
+          </AlertDescription>
+        </Alert>
 
-        <Card
+        <Alert
           onClick={() => setActiveCardFilter("danadas")}
-          className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "danadas" ? "ring-2 ring-slate-500" : "hover:shadow-md"}`}
+          className={`cursor-pointer transition-all h-full ${activeCardFilter === "danadas" ? "bg-slate-100 border-slate-400 [&>svg]:text-slate-600" : "hover:border-slate-300 hover:bg-slate-50/50"}`}
         >
-          <div className="h-1 bg-gradient-to-r from-slate-500 to-slate-400" />
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <Wrench className="h-5 w-5 text-orange-500" />
-              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-600 border-orange-200">Daño</Badge>
-            </div>
-            <div className="text-3xl font-bold text-orange-600">{estadisticas.danadas}</div>
-            <p className="text-xs text-muted-foreground mt-1">Kits en Daño</p>
-          </CardContent>
-        </Card>
+          <Wrench className="h-4 w-4" />
+          <AlertTitle className="text-sm font-semibold tracking-tight text-muted-foreground uppercase">Kits En Daño</AlertTitle>
+          <AlertDescription className="text-2xl font-bold text-slate-700 mt-1">
+            {estadisticas.danadas}
+          </AlertDescription>
+        </Alert>
 
-        <Card
+        <Alert
           onClick={() => setActiveCardFilter("garantias")}
-          className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "garantias" ? "ring-2 ring-cyan-500" : "hover:shadow-md"}`}
+          className={`cursor-pointer transition-all h-full ${activeCardFilter === "garantias" ? "bg-cyan-50 border-cyan-400 [&>svg]:text-cyan-600" : "hover:border-cyan-300 hover:bg-cyan-50/50"}`}
         >
-          <div className="h-1 bg-gradient-to-r from-cyan-500 to-cyan-400" />
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <ShieldCheck className="h-5 w-5 text-cyan-500" />
-              <Badge variant="outline" className="text-[10px] bg-cyan-50 text-cyan-600 border-cyan-200">Garantía</Badge>
-            </div>
-            <div className="text-3xl font-bold text-cyan-600">{estadisticas.garantias}</div>
-            <p className="text-xs text-muted-foreground mt-1">Kits en Garantía</p>
-          </CardContent>
-        </Card>
+          <ShieldCheck className="h-4 w-4" />
+          <AlertTitle className="text-sm font-semibold tracking-tight text-muted-foreground uppercase">Kits en Garantía</AlertTitle>
+          <AlertDescription className="text-2xl font-bold text-cyan-700 mt-1">
+            {estadisticas.garantias}
+          </AlertDescription>
+        </Alert>
       </div>
 
-      <div className="backdrop-blur-xl rounded-xl border border-cyan-500/20 shadow-xl shadow-cyan-500/5 overflow-hidden">
-        <div className="p-6 pb-0">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="bg-card rounded-lg border p-6">
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-bold text-cyan-600 dark:text-white">
+              <h2>
                 {activeCardFilter === "ppc"
                   ? "Soporte VIP / PPC"
                   : activeCardFilter === "danadas"
@@ -839,7 +905,7 @@ export function FusagasugaMensualidades({
               {loadingClientes && (
                 <Badge
                   variant="outline"
-                  className="bg-cyan-50/50 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border-cyan-200/50 dark:border-cyan-500/30"
+                  className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800"
                 >
                   <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
                   Cargando...
@@ -848,7 +914,7 @@ export function FusagasugaMensualidades({
               {!serverAvailable && !loadingClientes && (
                 <Badge
                   variant="outline"
-                  className="bg-yellow-50/50 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-300 border-yellow-200/50 dark:border-yellow-500/30"
+                  className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800"
                 >
                   💾 Modo Offline
                 </Badge>
@@ -856,7 +922,7 @@ export function FusagasugaMensualidades({
               {serverAvailable && !loadingClientes && (
                 <Badge
                   variant="outline"
-                  className="bg-green-50/50 dark:bg-green-500/20 text-green-600 dark:text-green-300 border-green-200/50 dark:border-green-500/30"
+                  className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800"
                 >
                   ✓ Sincronizado
                 </Badge>
@@ -937,80 +1003,77 @@ export function FusagasugaMensualidades({
             </div>
           )}
 
-          <div className="bg-gradient-to-r from-cyan-50/80 to-blue-50/80 dark:from-[#0F2744]/80 dark:to-[#0A1628]/80 rounded-xl p-4 mb-6 border border-cyan-100/50 dark:border-cyan-500/20">
-            <div className="flex flex-col md:flex-row gap-4 items-end">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                <Input
-                  placeholder="Buscar por nombre, cuenta o email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/80 dark:bg-[#0A1628]/80 border-cyan-200/50 dark:border-cyan-500/30 focus:border-cyan-500 focus:ring-cyan-500/20"
-                />
-              </div>
-
-              <Select value={filterEstado} onValueChange={setFilterEstado}>
-                <SelectTrigger className="w-full md:w-[200px] bg-white/80 dark:bg-[#0A1628]/80 border-cyan-200/50 dark:border-cyan-500/30 focus:ring-cyan-500/20">
-                  <SelectValue placeholder="Estado de pago" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-[#0A1628] border-cyan-200/50 dark:border-cyan-500/30">
-                  <SelectItem value="todos">Todos los estados</SelectItem>
-                  <SelectItem value="confirmado">Confirmado</SelectItem>
-                  <SelectItem value="pendiente">Pendiente</SelectItem>
-                  <SelectItem value="mora">Mora</SelectItem>
-                  <SelectItem value="suspendido">Suspendido</SelectItem>
-                  <SelectItem value="en_dano">En Daño</SelectItem>
-                  <SelectItem value="garantia">En Garantía</SelectItem>
-                  <SelectItem value="sin_factura">Sin Facturas</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={filterCorte} onValueChange={setFilterCorte}>
-                <SelectTrigger className="w-full md:w-[200px] bg-white/80 dark:bg-[#0A1628]/80 border-cyan-200/50 dark:border-cyan-500/30 focus:ring-cyan-500/20">
-                  <SelectValue placeholder="Fecha de corte" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-[#0A1628] border-cyan-200/50 dark:border-cyan-500/30">
-                  <SelectItem value="todos">Todas las fechas</SelectItem>
-                  <SelectItem value="1-10">Días 1-10</SelectItem>
-                  <SelectItem value="11-20">Días 11-20</SelectItem>
-                  <SelectItem value="21-31">Días 21-31</SelectItem>
-                </SelectContent>
-              </Select>
-              {(filterEstado !== "todos" ||
-                filterCorte !== "todos" ||
-                showOnlyMora) && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setFilterEstado("todos");
-                      setFilterCorte("todos");
-                      setShowOnlyMora(false);
-                      toast.info("Filtros limpiados");
-                    }}
-                    className="bg-white/80 dark:bg-[#0A1628]/80 border-cyan-200/50 dark:border-cyan-500/30 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-500/10"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Limpiar filtros
-                  </Button>
-                )}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre, cuenta o email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
+
+            <Select value={filterEstado} onValueChange={setFilterEstado}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Estado de pago" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los estados</SelectItem>
+                <SelectItem value="confirmado">Confirmado</SelectItem>
+                <SelectItem value="pendiente">Pendiente</SelectItem>
+                <SelectItem value="mora">Mora</SelectItem>
+                <SelectItem value="suspendido">Suspendido</SelectItem>
+                <SelectItem value="en_dano">En Daño</SelectItem>
+                <SelectItem value="garantia">En Garantía</SelectItem>
+                <SelectItem value="sin_factura">Sin Facturas</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterCorte} onValueChange={setFilterCorte}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Fecha de corte" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas las fechas</SelectItem>
+                <SelectItem value="1-10">Días 1-10</SelectItem>
+                <SelectItem value="11-20">Días 11-20</SelectItem>
+                <SelectItem value="21-31">Días 21-31</SelectItem>
+              </SelectContent>
+            </Select>
+            {(filterEstado !== "todos" ||
+              filterCorte !== "todos" ||
+              showOnlyMora) && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setFilterEstado("todos");
+                    setFilterCorte("todos");
+                    setShowOnlyMora(false);
+                    toast.info("Filtros limpiados");
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Limpiar filtros
+                </Button>
+              )}
           </div>
         </div>
 
-        <div className="rounded-xl border bg-white dark:bg-[#0A1628]/60 overflow-hidden shadow-sm">
-          {errorClientes && <p className="text-red-500 p-4">{errorClientes}</p>}
-          <Table className="text-sm">
+        <div className="rounded-md border">
+          {errorClientes && <p className="text-red-500">{errorClientes}</p>}
+          <Table className="text-xs">
             <TableHeader>
-              <TableRow className="bg-cyan-50/50 dark:bg-[#0F2744]/50 border-b">
-                <TableHead className="px-4 py-3 font-semibold text-muted-foreground">Kit</TableHead>
-                <TableHead className="px-4 py-3 font-semibold text-muted-foreground">Cliente</TableHead>
-                <TableHead className="px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">Cuenta Starlink</TableHead>
-                <TableHead className="px-4 py-3 font-semibold text-muted-foreground hidden xl:table-cell">Email</TableHead>
-                <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-center">Corte</TableHead>
-                <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-center">Estado</TableHead>
-                <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-center">Facturas</TableHead>
-                <TableHead className="px-4 py-3 font-semibold text-muted-foreground hidden lg:table-cell">Observación</TableHead>
-                <TableHead className="px-4 py-3 font-semibold text-muted-foreground">Acciones</TableHead>
+              <TableRow>
+                <TableHead className="whitespace-normal px-2">Kit</TableHead>
+                <TableHead className="whitespace-normal px-2">Cliente</TableHead>
+                <TableHead className="whitespace-normal px-2">Cuenta Starlink</TableHead>
+                <TableHead className="whitespace-normal px-2 hidden md:table-cell">Email</TableHead>
+                <TableHead className="whitespace-normal px-2">Fecha de Corte</TableHead>
+                <TableHead className="whitespace-normal px-2 text-center">Estado de Pago</TableHead>
+                <TableHead className="whitespace-normal px-2">Facturas</TableHead>
+                <TableHead className="whitespace-normal px-2 hidden md:table-cell">Observación</TableHead>
+                <TableHead className="whitespace-normal px-2">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1047,12 +1110,12 @@ export function FusagasugaMensualidades({
                   }).map((cliente) => (
                     <TableRow
                       key={cliente.kit}
-                      className={`cursor-pointer hover:bg-cyan-50 dark:hover:bg-cyan-500/10 transition-colors ${cliente.estado_pago === "en_dano"
-                          ? "bg-red-50 dark:bg-red-950/20"
+                      className={`cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${cliente.estado_pago === "en_dano"
+                          ? "bg-red-50 dark:bg-red-950/20 opacity-90"
                           : cliente.estado_pago === "garantia"
-                            ? "bg-cyan-50 dark:bg-cyan-950/20"
+                            ? "bg-cyan-50 dark:bg-cyan-950/20 opacity-90"
                             : cliente.estado_pago === "suspendido"
-                              ? "bg-cyan-50/30 dark:bg-cyan-500/10"
+                              ? "bg-slate-100 dark:bg-slate-800/50 opacity-80"
                               : ""
                         }`}
                       onClick={() => handleVerDetalles(cliente)}
@@ -1258,7 +1321,11 @@ export function FusagasugaMensualidades({
                                 onClick={async () => {
                                   if (window.confirm("¿Confirmas marcar este cliente como EN DAÑO? El servicio se inhabilitará.")) {
                                     try {
-                                      await fusagasugaService.actualizarEstado(cliente.kit, "en_dano");
+                                      await fetch(`https://soingtel.onrender.com/api/clientes_fusagasuga/${cliente.kit}/estado`, {
+                                        method: "PUT",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ estado_pago: "en_dano" }),
+                                      });
                                       await reloadClientes();
                                       toast.error("Cliente marcado en daño!");
                                     } catch (e) {
@@ -1266,7 +1333,7 @@ export function FusagasugaMensualidades({
                                     }
                                   }
                                 }}
-                                className="border-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 text-red-600"
+                                className="border-red-900 hover:bg-slate-900 hover:text-red-500 text-red-900"
                               >
                                 <AlertCircle className="h-4 w-4 mr-2" />
                                 En Daño
@@ -1282,7 +1349,11 @@ export function FusagasugaMensualidades({
                                 onClick={async () => {
                                   if (window.confirm("¿Confirmas marcar este cliente EN GARANTÍA? El servicio se inhabilitará.")) {
                                     try {
-                                      await fusagasugaService.actualizarEstado(cliente.kit, "garantia");
+                                      await fetch(`https://soingtel.onrender.com/api/clientes_fusagasuga/${cliente.kit}/estado`, {
+                                        method: "PUT",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ estado_pago: "garantia" }),
+                                      });
                                       await reloadClientes();
                                       toast.error("Cliente marcado en garantía!");
                                     } catch (e) {
@@ -1306,7 +1377,11 @@ export function FusagasugaMensualidades({
                                 onClick={async () => {
                                   if (window.confirm("¿Confirmas marcar este cliente como TRANSFERIDA?")) {
                                     try {
-                                      await fusagasugaService.actualizarEstado(cliente.kit, "transferida");
+                                      await fetch(`https://soingtel.onrender.com/api/clientes_fusagasuga/${cliente.kit}/estado`, {
+                                        method: "PUT",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ estado_pago: "transferida" }),
+                                      });
                                       await reloadClientes();
                                       toast.success("Cliente marcado como transferida!");
                                     } catch (e) {
