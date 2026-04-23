@@ -22,6 +22,8 @@ const app = express();
 // ===========================================
 // SEGURIDAD
 // ===========================================
+app.use(cors(config.cors));
+app.options("*", cors(config.cors));
 app.use(helmet());
 app.use(rateLimit({
   windowMs: config.rateLimit.windowMs,
@@ -30,13 +32,17 @@ app.use(rateLimit({
 }));
 
 // Middleware
-app.use(cors(config.cors));
-app.options("*", cors(config.cors));
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use((req, res, next) => {
   logger.debug("Request recibido", { method: req.method, path: req.path });
+  next();
+});
+
+app.use((req, res, next) => {
+  console.log("Origin:", req.headers.origin);
   next();
 });
 

@@ -32,11 +32,23 @@ const USUARIOS_VALIDOS = parsed.data.USERS.split(",").map((u) => {
 module.exports = {
   port: parseInt(parsed.data.PORT) || 3001,
   nodeEnv: parsed.data.NODE_ENV,
-  cors: {
-    origin: parsed.data.CORS_ORIGINS.split(","),
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+ cors: {
+  origin: (origin, callback) => {
+    const allowedOrigins = parsed.data.CORS_ORIGINS.split(",");
+
+    // permitir requests sin origin (Postman, cron, etc)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("No permitido por CORS"));
   },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+},
   database: {
     connectionString: parsed.data.DATABASE_URL,
     ssl: parsed.data.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : false,
