@@ -21,8 +21,12 @@ if (!parsed.success) {
 }
 
 const USUARIOS_VALIDOS = parsed.data.USERS.split(",").map((u) => {
-  const [usuario, contrasena, rol = "basic"] = u.split(":");
-  return { usuario: usuario.trim(), contrasena: contrasena.trim(), rol: rol.trim() };
+  const [usuario, contrasena, rol] = u.split(":");
+  return {
+    usuario: usuario.trim(),
+    contrasena: contrasena.trim(),
+    rol: rol ? rol.trim() : usuario.trim() // Si no hay rol, usar el nombre del usuario
+  };
 });
 
 module.exports = {
