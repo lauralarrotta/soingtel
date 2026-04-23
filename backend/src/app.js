@@ -19,6 +19,27 @@ const { exportarAGoogleSheets } = require("./integrations/googleSheets/googleShe
 
 const app = express();
 
+// Health - sin auth, sin rate limit (antes del rate limiter)
+app.get("/api/health", async (req, res) => {
+  const health = {
+    status: "ok",
+    database: "PostgreSQL",
+    databaseStatus: "unknown",
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    await pool.query("SELECT 1");
+    health.databaseStatus = "connected";
+  } catch (error) {
+    health.status = "degraded";
+    health.databaseStatus = "disconnected";
+  }
+
+  const statusCode = health.status === "ok" ? 200 : 503;
+  return res.status(statusCode).json(health);
+});
+
 // ===========================================
 // SEGURIDAD
 // ===========================================
@@ -44,27 +65,6 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   console.log("Origin:", req.headers.origin);
   next();
-});
-
-// Health - sin auth, antes de las rutas protegidas
-app.get("/api/health", async (req, res) => {
-  const health = {
-    status: "ok",
-    database: "PostgreSQL",
-    databaseStatus: "unknown",
-    timestamp: new Date().toISOString(),
-  };
-
-  try {
-    await pool.query("SELECT 1");
-    health.databaseStatus = "connected";
-  } catch (error) {
-    health.status = "degraded";
-    health.databaseStatus = "disconnected";
-  }
-
-  const statusCode = health.status === "ok" ? 200 : 503;
-  return res.status(statusCode).json(health);
 });
 
 // Routes

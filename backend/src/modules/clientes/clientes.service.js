@@ -55,8 +55,10 @@ class ClientesService {
   }
 
   async actualizar(kit, campos, sede = "principal") {
-    validarFormatoKit(kit);
-    validarActualizarCliente(campos);
+    // Solo validar formato kit si se está cambiando a un valor diferente
+    if (campos.kit && campos.kit !== kit) {
+      validarFormatoKit(campos.kit);
+    }
 
     const table = sede === "fusagasuga" ? TABLAS.FUSAGASUGA : TABLAS.PRINCIPAL;
     const result = await clientesRepository.update(kit, campos, table);

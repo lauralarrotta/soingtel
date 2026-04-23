@@ -270,7 +270,7 @@ if (key === "clientes" || key === "clientes_fusagasuga") {
   loadData();
 }, [pageState, limit, JSON.stringify(filters), key]);
 
-  // Recargar datos periódicamente (cada 30 segundos) para sincronizar con otros usuarios
+  // Recargar datos periódicamente (cada 60 segundos) para sincronizar con otros usuarios
   useEffect(() => {
     if (!serverAvailable) return;
 
@@ -288,7 +288,7 @@ if (key === "clientes" || key === "clientes_fusagasuga") {
 
       console.log(`[useLocalPostgres] Recarga automática para ${key}`);
       loadData();
-    }, 30000); // 30 segundos
+    }, 60000); // 60 segundos
 
     return () => clearInterval(interval);
   }, [loadData, serverAvailable]);
