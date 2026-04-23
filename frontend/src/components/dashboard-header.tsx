@@ -79,10 +79,10 @@ export function DashboardHeader({
         try {
           const [resSusp, resReac] = await Promise.all([
             fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`, {
-              headers: { Authorization: `Bearer ${token}` },
+              headers: { Authorization: `Basic ${token}` },
             }),
             fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, {
-              headers: { Authorization: `Bearer ${token}` },
+              headers: { Authorization: `Basic ${token}` },
             }),
           ]);
 

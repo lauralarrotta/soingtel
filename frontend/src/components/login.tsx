@@ -6,7 +6,7 @@ import { Label } from "./ui/label";
 import { ShieldCheck, Eye, EyeOff, Lock, User, Zap, Cpu, Globe } from "lucide-react";
 
 interface LoginProps {
-  onLogin: (userType: string) => void;
+  onLogin: (userType: string, token?: string) => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
@@ -26,23 +26,31 @@ export function Login({ onLogin }: LoginProps) {
     []
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    setTimeout(() => {
-      if (username === "facturacion" && password === "facturacion123") {
-        onLogin("facturacion");
-      } else if (username === "soporte" && password === "soporte123") {
-        onLogin("soporte");
-      } else if (username === "admin" && password === "admin123") {
-        onLogin("admin");
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://soingtel.onrender.com/api'}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuario: username, contrasena: password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        localStorage.setItem("token", data.data.token);
+        onLogin(data.data.rol, data.data.token);
       } else {
-        setError("Acceso denegado. Credenciales inválidas.");
+        setError(data.message || "Credenciales inválidas");
       }
+    } catch (err) {
+      setError("Error de conexión. Intenta más tarde.");
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (

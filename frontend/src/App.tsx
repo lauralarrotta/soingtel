@@ -124,11 +124,13 @@ export default function App() {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
-  const handleLogin = (type: string) => {
+  const handleLogin = (type: string, token?: string) => {
+    if (token) localStorage.setItem("token", token);
     setUserType(type);
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     setUserType("");
   };
 
