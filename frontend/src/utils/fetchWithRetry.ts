@@ -3,8 +3,17 @@ export const fetchWithRetry = async (
   options?: RequestInit,
   retries = 3
 ): Promise<Response> => {
+  const headers: Record<string, string> = {};
+  const token = localStorage.getItem("token");
+  if (token) headers["Authorization"] = `Basic ${token}`;
+
+  if (options?.headers) {
+    const h = options.headers as Record<string, string>;
+    Object.entries(h).forEach(([k, v]) => { headers[k] = v; });
+  }
+
   try {
-    const res = await fetch(url, options);
+    const res = await fetch(url, { ...options, headers });
     if (!res.ok) throw new Error("Error en request");
     return res;
   } catch (err) {

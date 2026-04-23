@@ -3,9 +3,13 @@ import { API_CONFIG } from "@/config";
 
 export const fusagasugaService = {
   crear: async (cliente: Cliente) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(cliente),
     });
 
@@ -17,8 +21,13 @@ export const fusagasugaService = {
   },
 
   eliminar: async (kit: string) => {
+    const headers: Record<string, string> = {};
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}`, {
       method: "DELETE",
+      headers,
     });
 
     if (!res.ok) throw new Error("Error eliminando cliente");
@@ -26,9 +35,13 @@ export const fusagasugaService = {
   },
 
   actualizarEstado: async (kit: string, estado: string) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/estado`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ estado_pago: estado }),
     });
 
@@ -37,15 +50,25 @@ export const fusagasugaService = {
   },
 
   estadisticas: async () => {
-    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/estadisticas`);
+    const headers: Record<string, string> = {};
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/estadisticas`, {
+      headers,
+    });
     if (!res.ok) throw new Error("Error cargando estadísticas");
     return res.json();
   },
 
   exportar: async (clientes: any[]) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/exportar-sheets-fusagasuga`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ clientes }),
     });
 
@@ -54,9 +77,13 @@ export const fusagasugaService = {
   },
 
   importar: async (clientes: any[], userType: string) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/importar`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ clientes, userType }),
     });
 
@@ -65,9 +92,13 @@ export const fusagasugaService = {
   },
 
   actualizarCliente: async (kit: string, data: any) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(data),
     });
 
@@ -76,9 +107,13 @@ export const fusagasugaService = {
   },
 
   actualizarObservacion: async (kit: string, observacion: string) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/observacion`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ observacion }),
     });
 
@@ -91,9 +126,13 @@ export const fusagasugaService = {
   },
 
   actualizarEstadoFacturacion: async (kit: string, estado: string | null) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes_fusagasuga/${kit}/facturacion`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         estado_facturacion: estado,
         rol: "facturacion",

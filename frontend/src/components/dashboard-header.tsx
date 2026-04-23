@@ -76,14 +76,13 @@ export function DashboardHeader({
 
         // Servidor
         const token = localStorage.getItem("token");
+        const authHeaders: Record<string, string> = {};
+        if (token) authHeaders["Authorization"] = `Basic ${token}`;
+
         try {
           const [resSusp, resReac] = await Promise.all([
-            fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`, {
-              headers: { Authorization: `Basic ${token}` },
-            }),
-            fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, {
-              headers: { Authorization: `Basic ${token}` },
-            }),
+            fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`, { headers: authHeaders }),
+            fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, { headers: authHeaders }),
           ]);
 
           if (resSusp.ok) {
