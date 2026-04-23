@@ -75,10 +75,15 @@ export function DashboardHeader({
         }
 
         // Servidor
+        const token = localStorage.getItem("token");
         try {
           const [resSusp, resReac] = await Promise.all([
-            fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`),
-            fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`),
+            fetch(`${API_CONFIG.BASE_URL}/api/alertas_suspension`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            fetch(`${API_CONFIG.BASE_URL}/api/alertas_reactivacion`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
           ]);
 
           if (resSusp.ok) {
