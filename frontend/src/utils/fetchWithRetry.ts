@@ -1,5 +1,5 @@
 const RATE_LIMIT_KEY = "soingtel_rate_limit_until";
-const COOLDOWN_MS = 30000; // 30 segundos de cooldown después de 429
+const COOLDOWN_MS = 5000; // Reducido a 5 segundos de cooldown
 
 export const fetchWithRetry = async (
   url: string,

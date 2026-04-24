@@ -25,11 +25,6 @@ const app = express();
 app.use(cors(config.cors));
 app.options("*", cors(config.cors));
 app.use(helmet());
-app.use(rateLimit({
-  windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.max,
-  message: ApiResponse.error(null, "Demasiadas solicitudes, intenta en 15 minutos", 429),
-}));
 
 // Middleware
 
@@ -46,7 +41,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health - sin auth, antes de las rutas protegidas
+// Health - sin auth, antes del rate limit para evitar bloqueos por monitoreo
 app.get("/api/health", async (req, res) => {
   const health = {
     status: "ok",
@@ -66,6 +61,13 @@ app.get("/api/health", async (req, res) => {
   const statusCode = health.status === "ok" ? 200 : 503;
   return res.status(statusCode).json(health);
 });
+
+// Aplicar rate limit después del health check
+app.use(rateLimit({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.max, // Te sugiero aumentar este valor en tu archivo de configuración (.env)
+  message: ApiResponse.error(null, "Demasiadas solicitudes, intenta en 15 minutos", 429),
+}));
 
 // Routes
 app.use("/api", authRoutes);
