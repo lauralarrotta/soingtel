@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { API_CONFIG } from "@/config";
+import { fetchWithRetry } from "@/utils/fetchWithRetry";
 import {
   Dialog,
   DialogContent,
@@ -56,36 +57,33 @@ export function AlertasReactivacionModal({
   const cargarAlertas = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`);
-      if (res.ok) {
-        const data = await res.json();
-        const delServidor: AlertaReactivacion[] = (data.alertas_reactivacion || [])
-          .filter((a: any) => !a.vista)
-          .map((a: any) => ({
-            id: String(a.id),
-            kit: a.cliente_kit,
-            nombre: a.cliente_nombre,
-            cuenta: "",
-            email: "",
-            fechaReactivacion: a.fecha_creacion,
-            ultimoPago: a.numero_factura || "N/A",
-            metodoPago: "",
-            vista: a.vista || false,
-          }));
+      const res = await fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_reactivacion`);
+      const data = await res.json();
+      
+      const delServidor: AlertaReactivacion[] = (data.alertas_reactivacion || [])
+      .filter((a: any) => !a.vista)
+      .map((a: any) => ({
+        id: String(a.id),
+        kit: a.cliente_kit,
+        nombre: a.cliente_nombre,
+        cuenta: "",
+        email: "",
+        fechaReactivacion: a.fecha_creacion,
+        ultimoPago: a.numero_factura || "N/A",
+        metodoPago: "",
+        vista: a.vista || false,
+      }));
 
-        const locales: AlertaReactivacion[] = JSON.parse(
-          localStorage.getItem("alertas_reactivacion") || "[]"
-        );
+      const locales: AlertaReactivacion[] = JSON.parse(localStorage.getItem("alertas_reactivacion") || "[]");
 
-        const todas = [...delServidor];
-        locales.forEach((local) => {
-          if (!todas.find((r) => r.id === String(local.id))) {
-            todas.push(local);
-          }
-        });
+      const todas = [...delServidor];
+      locales.forEach((local) => {
+        if (!todas.find((r) => r.id === String(local.id))) {
+          todas.push(local);
+        }
+      });
 
-        setAlertas(todas);
-      }
+      setAlertas(todas);
     } catch (e) {
       const locales = localStorage.getItem("alertas_reactivacion");
       if (locales) setAlertas(JSON.parse(locales));
@@ -101,7 +99,7 @@ export function AlertasReactivacionModal({
     setAlertas(alertasActualizadas);
     localStorage.setItem("alertas_reactivacion", JSON.stringify(alertasActualizadas));
     try {
-      await fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, {
+      await fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alertas_reactivacion: [{ id, vista: true }] }),
@@ -114,7 +112,7 @@ export function AlertasReactivacionModal({
     setAlertas(alertasActualizadas);
     localStorage.setItem("alertas_reactivacion", JSON.stringify(alertasActualizadas));
     try {
-      await fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, {
+      await fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alertas_reactivacion: [{ id, vista: true }] }),
@@ -131,7 +129,7 @@ export function AlertasReactivacionModal({
 
   const ejecutarReactivacion = async (alerta: AlertaReactivacion) => {
     try {
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `${API_CONFIG.BASE_URL}/clientes/${alerta.kit}/estado`,
         {
           method: "PUT",
@@ -153,7 +151,7 @@ export function AlertasReactivacionModal({
 
       // Intentar eliminar del servidor
       try {
-        await fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion/${alerta.id}`, {
+        await fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_reactivacion/${alerta.id}`, {
           method: "DELETE",
         });
       } catch {}
