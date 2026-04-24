@@ -10,7 +10,6 @@ const DATABASE_MODE = "local"; // Configuración local forzada para evitar error
 
 export function useDatabase<T>(key: string, initialValue: T, mergeKey?: any, page: number = 1, limit: number = 100, filters: Record<string, any> = {} )  {
   if (DATABASE_MODE === "local") {
-    console.log(`[useDatabase] Usando PostgreSQL Local para ${key} (Page: ${page}, Limit: ${limit})`);
     return useLocalPostgres<T>(key, initialValue, mergeKey, page, limit, filters);
   }
 

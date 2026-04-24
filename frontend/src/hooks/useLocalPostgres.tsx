@@ -114,7 +114,7 @@ export function useLocalPostgres<T>(
           setTotalCount(result?.total || 0);
         }
       } catch (err) {
-        console.log(`[useLocalPostgres] Background load falló para ${key}:`, err);
+        // Silencioso en background load
       }
       return;
     }
@@ -200,7 +200,6 @@ export function useLocalPostgres<T>(
       localStorage.setItem(`soingtel_${key}`, JSON.stringify(cleanData));
 
       if (!healthManager.isAvailable()) {
-        console.log(`[useLocalPostgres] Guardando solo localmente ${key}`);
         return;
       }
 
@@ -251,10 +250,8 @@ export function useLocalPostgres<T>(
     const interval = setInterval(() => {
       const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
       if (timeSinceLastSave < 10000) {
-        console.log(`[useLocalPostgres] Saltando recarga automática (cambios recientes)`);
         return;
       }
-      console.log(`[useLocalPostgres] Recarga automática para ${key}`);
       loadData({ background: true });
     }, 60000);
 
