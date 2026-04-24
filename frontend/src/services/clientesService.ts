@@ -1,11 +1,16 @@
 import { Cliente } from "@/types/cliente";
-import { API_CONFIG, api } from "@/config";
+import { API_CONFIG } from "@/config";
+import { fetchWithRetry } from "@/utils/fetchWithRetry";
 
 export const clientesService = {
   crear: async (cliente: Cliente) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(cliente),
     });
 
@@ -14,8 +19,13 @@ export const clientesService = {
   },
 
   eliminar: async (kit: string) => {
+    const headers: Record<string, string> = {};
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}`, {
       method: "DELETE",
+      headers,
     });
 
     if (!res.ok) throw new Error("Error eliminando cliente");
@@ -23,9 +33,13 @@ export const clientesService = {
   },
 
   actualizarEstado: async (kit: string, estado: string) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}/estado`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ estado_pago: estado }),
     });
 
@@ -34,15 +48,25 @@ export const clientesService = {
   },
 
   estadisticas: async () => {
-    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/estadisticas`);
+    const headers: Record<string, string> = {};
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
+    const res = await fetchWithRetry(`${API_CONFIG.BASE_URL}/clientes/estadisticas`, {
+      headers,
+    });
     if (!res.ok) throw new Error("Error cargando estadísticas");
     return res.json();
   },
 
   exportar: async (clientes: any[]) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/exportar-sheets`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ clientes }),
     });
 
@@ -51,9 +75,13 @@ export const clientesService = {
   },
 
   importar: async (clientes: any[], userType: string) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/importar`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ clientes, userType }),
     });
 
@@ -62,9 +90,13 @@ export const clientesService = {
   },
 
   actualizarCliente: async (kit: string, data: any) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(data),
     });
 
@@ -72,10 +104,28 @@ export const clientesService = {
     return res.json();
   },
 
+  recalcularEstados: async () => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/recalcular-estados`, {
+      method: "POST",
+      headers,
+    });
+
+    if (!res.ok) throw new Error("Error recalculando estados");
+    return res.json();
+  },
+
   actualizarObservacion: async (kit: string, observacion: string) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}/observacion`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ observacion }),
     });
 
@@ -88,9 +138,13 @@ export const clientesService = {
   },
 
   actualizarEstadoFacturacion: async (kit: string, estado: string | null) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}/facturacion`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         estado_facturacion: estado,
         rol: "facturacion",

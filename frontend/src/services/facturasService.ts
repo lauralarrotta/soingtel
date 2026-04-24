@@ -3,9 +3,13 @@ import { API_CONFIG } from "@/config";
 
 export const facturasService = {
   crear: async (kit: string, factura: Factura) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/${kit}/facturas`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(factura),
     });
 
@@ -22,11 +26,15 @@ export const facturasService = {
     numero: string,
     factura: Factura
   ) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(
       `${API_CONFIG.BASE_URL}/clientes/${kit}/facturas/${encodeURIComponent(numero)}`,
       {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(factura),
       }
     );
@@ -40,10 +48,15 @@ export const facturasService = {
   },
 
   eliminar: async (kit: string, numero: string) => {
+    const headers: Record<string, string> = {};
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
     const res = await fetch(
       `${API_CONFIG.BASE_URL}/clientes/${kit}/facturas/${encodeURIComponent(numero)}`,
       {
         method: "DELETE",
+        headers,
       }
     );
 

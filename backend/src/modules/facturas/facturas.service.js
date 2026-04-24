@@ -32,7 +32,7 @@ class FacturasService {
       estado_pago: estado_pago || "pendiente",
     });
 
-    await this._actualizarFacturacionCliente(cliente_id, estado_pago);
+    await this._actualizarClientePorUltimaFactura(cliente_id);
 
     return factura;
   }
@@ -60,21 +60,20 @@ class FacturasService {
       estado_pago: estadoPago || "pendiente",
     });
 
-    let estadoFacturacion = null;
-    if (fechaFactura) {
-      const mismoMes = await facturasRepository.existePorClienteYMes(cliente.id, fechaFactura);
-      if (mismoMes) {
-        const update = await facturasRepository.update(cliente.id, { estado_facturacion: "facturado" }, "clientes");
-        estadoFacturacion = update?.estado_facturacion;
-      }
-    }
+    // Actualizar estado del cliente según la última factura
+    await this._actualizarClientePorUltimaFactura(cliente.id);
 
-    return { factura, estado_facturacion: estadoFacturacion };
+    const clienteActualizado = await clientesRepository.findByKit(kit);
+
+    return { factura, estado_facturacion: clienteActualizado?.estado_facturacion };
   }
 
   async actualizar(kit, numeroFactura, data) {
     validarFormatoKit(kit);
     validarActualizarFactura(data);
+
+    const cliente = await clientesRepository.findByKit(kit);
+    if (!cliente) throw new AppError("Cliente no encontrado", 404);
 
     const { numero, fecha, estadoPago, periodo } = data;
 
@@ -86,6 +85,9 @@ class FacturasService {
     });
 
     if (!result) throw new AppError("Factura no encontrada para actualizar", 404);
+
+    await this._actualizarClientePorUltimaFactura(cliente.id);
+
     return { message: "Factura actualizada correctamente", factura: result };
   }
 
@@ -108,17 +110,43 @@ class FacturasService {
     if (factura.estado_pago === "pagado") throw new AppError("La factura ya está pagada", 400);
 
     const result = await facturasRepository.marcarPagado(factura.id, fechaPago);
+
+    await this._actualizarClientePorUltimaFactura(factura.cliente_id);
+
     return { message: "Pago registrado correctamente", factura: result };
   }
 
-  async _actualizarFacturacionCliente(cliente_id, estado_pago) {
-    const mismoMes = true;
-    if (mismoMes) {
-      let nuevoEstado = "facturado";
-      if (estado_pago === "roc") nuevoEstado = "ROC";
-      if (estado_pago === "ppc") nuevoEstado = "PPC";
-      await facturasRepository.update(cliente_id, { estado_facturacion: nuevoEstado }, "clientes");
+  async _actualizarClientePorUltimaFactura(cliente_id) {
+    const facturas = await facturasRepository.findByClienteId(cliente_id);
+    if (!facturas || facturas.length === 0) return;
+
+    const ultimaFactura = facturas.sort((a, b) =>
+      new Date(b.fecha) - new Date(a.fecha)
+    )[0];
+
+    const estadoPago = ultimaFactura.estado_pago;
+
+    let estadoPagoCliente = "pendiente";
+    let estadoFacturacion = "facturado";
+
+    if (estadoPago === "pagado") {
+      estadoPagoCliente = "confirmado";
+      estadoFacturacion = "facturado";
+    } else if (estadoPago === "roc") {
+      estadoPagoCliente = "pendiente";
+      estadoFacturacion = "ROC";
+    } else if (estadoPago === "ppc") {
+      estadoPagoCliente = "ppc";
+      estadoFacturacion = "PPC";
+    } else if (estadoPago === "pendiente" || estadoPago === "vencido") {
+      estadoPagoCliente = "pendiente";
+      estadoFacturacion = "facturado";
     }
+
+    await facturasRepository.update(cliente_id, {
+      estado_pago: estadoPagoCliente,
+      estado_facturacion: estadoFacturacion
+    }, "clientes");
   }
 }
 

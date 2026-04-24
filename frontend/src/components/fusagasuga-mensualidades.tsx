@@ -60,6 +60,7 @@ import { alertasService } from "@/services/alertasService";
 import { facturasService } from "@/services/facturasService";
 import { API_CONFIG } from "@/config";
 import { EstadoFacturacion, Factura, Cliente } from "@/types/cliente";
+import { healthManager } from "@/utils/healthManager";
 
 interface FusagasugaMensualidadesProps {
   userType?: string;
@@ -108,6 +109,9 @@ export function FusagasugaMensualidades({
 
   const cargarEstadisticas = async () => {
     try {
+      if (!healthManager.isAvailable()) {
+        return;
+      }
       const data = await fusagasugaService.estadisticas();
       setEstadisticas(data);
     } catch { }
@@ -141,8 +145,7 @@ export function FusagasugaMensualidades({
 
   useEffect(() => {
     cargarEstadisticas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [clientes]);
 
   useEffect(() => {
     const handleReload = () => {

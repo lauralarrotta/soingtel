@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { API_CONFIG } from "@/config";
+import { fetchWithRetry } from "@/utils/fetchWithRetry";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,9 @@ import {
   TableRow,
 } from "./ui/table";
 import { Ban, CheckCircle, RefreshCw } from "lucide-react";
+import { alertasService } from "@/services/alertasService";
+import { clientesService } from "@/services/clientesService";
+import { healthManager } from "@/utils/healthManager";
 
 interface AlertaSuspension {
   id: string;
@@ -57,40 +61,52 @@ export function AlertasSuspensionModal({
     setLoading(true);
     try {
       // 1) Cargar alertas del servidor (compartidas entre usuarios)
-      const res = await fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`);
-      if (res.ok) {
-        const data = await res.json();
-        const delServidor: AlertaSuspension[] = (data.alertas_suspension || [])
-          .filter((a: any) => !a.vista)
-          .map((a: any) => ({
-            id: String(a.id),
-            kit: a.cliente_kit,
-            nombre: a.cliente_nombre,
-            cuenta: "",
-            email: "",
-            motivo: a.mensaje || "",
-            facturasVencidas: parseInt(a.numero_factura) || 0,
-            fechaSuspension: a.fecha_creacion,
-            vista: a.vista || false,
-          }));
+      // Solo si healthManager permite requests
+      if (healthManager.isAvailable()) {
+        try {
+          const data = await alertasService.obtenerSuspension();
+          const delServidor: AlertaSuspension[] = ((data.alertas_suspension) || [])
+            .filter((a: any) => !a.vista)
+            .map((a: any) => ({
+              id: String(a.id),
+              kit: a.cliente_kit,
+              nombre: a.cliente_nombre,
+              cuenta: "",
+              email: "",
+              motivo: a.mensaje || "",
+              facturasVencidas: parseInt(a.numero_factura) || 0,
+              fechaSuspension: a.fecha_creacion,
+              vista: a.vista || false,
+            }));
 
-        // 2) Cargar alertas locales (creadas por este usuario en localStorage)
-        const alertasLocales: AlertaSuspension[] = JSON.parse(
-          localStorage.getItem("alertas_suspension") || "[]"
-        );
+          // 2) Cargar alertas locales (creadas por este usuario en localStorage)
+          const alertasLocales: AlertaSuspension[] = JSON.parse(
+            localStorage.getItem("alertas_suspension") || "[]"
+          );
 
-        // 3) Combinar sin duplicados por id
-        const todas = [...delServidor];
-        alertasLocales.forEach((local) => {
-          if (!todas.find((s) => s.id === String(local.id))) {
-            todas.push(local);
-          }
-        });
+          // 3) Combinar sin duplicados por id
+          const todas = [...delServidor];
+          alertasLocales.forEach((local) => {
+            if (!todas.find((s) => s.id === String(local.id))) {
+              todas.push(local);
+            }
+          });
 
-        setAlertas(todas);
+          setAlertas(todas);
+          setLoading(false);
+          return;
+        } catch (e) {
+          // Si falla el servidor, caer a locales
+        }
       }
+
+      // Fallback: cargar solo alertas locales
+      const alertasLocales: AlertaSuspension[] = JSON.parse(
+        localStorage.getItem("alertas_suspension") || "[]"
+      );
+      setAlertas(alertasLocales);
     } catch (e) {
-      // Si falla el servidor, cargar solo locales
+      // Si falla todo, cargar solo locales
       const locales = localStorage.getItem("alertas_suspension");
       if (locales) setAlertas(JSON.parse(locales));
     } finally {
@@ -106,15 +122,15 @@ export function AlertasSuspensionModal({
     setAlertas(alertasActualizadas);
     localStorage.setItem("alertas_suspension", JSON.stringify(alertasActualizadas));
 
-    // Marcar en el servidor
+    // Notificar al servidor que la alerta fue vista
     try {
-      await fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`, {
+      await fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_suspension`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alertas_suspension: [{ id, vista: true }] }),
       });
     } catch (e) {
-      // Silencioso — la marca local ya funciona
+      console.error("Error al marcar alerta como vista en servidor:", e);
     }
   };
 
@@ -122,13 +138,15 @@ export function AlertasSuspensionModal({
     const alertasActualizadas = alertas.filter((a) => a.id !== id);
     setAlertas(alertasActualizadas);
     localStorage.setItem("alertas_suspension", JSON.stringify(alertasActualizadas));
+
+    // Eliminar del servidor
     try {
-      await fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ alertas_suspension: [{ id, vista: true }] }),
+      await fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_suspension/${id}`, {
+        method: "DELETE",
       });
-    } catch (e) {}
+    } catch (e) {
+      console.error("Error al eliminar alerta del servidor:", e);
+    }
   };
 
   const alertasNuevas = alertas.filter((a) => !a.vista);
@@ -140,18 +158,7 @@ export function AlertasSuspensionModal({
 
   const ejecutarSuspension = async (alerta: AlertaSuspension) => {
     try {
-      const response = await fetch(
-        `${API_CONFIG.BASE_URL}/clientes/${alerta.kit}/estado`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ estado_pago: "suspendido", motivo: alerta.motivo }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Error suspendiendo en el servidor");
-      }
+      await clientesService.actualizarEstado(alerta.kit, "suspendido");
 
       toast.success("Cliente suspendido en el sistema", { description: "Kit: " + alerta.kit });
 
@@ -160,13 +167,13 @@ export function AlertasSuspensionModal({
       setAlertas(restantes);
       localStorage.setItem("alertas_suspension", JSON.stringify(restantes));
 
-      // Intentar eliminar del servidor (si el endpoint ya existe)
+      // IMPORTANTE: Eliminar la alerta del servidor para que no vuelva a aparecer
       try {
-        await fetch(`${API_CONFIG.BASE_URL}/alertas_suspension/${alerta.id}`, {
+        await fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_suspension/${alerta.id}`, {
           method: "DELETE",
         });
-      } catch {
-        // Silencioso — si falla, se filtrará en la siguiente carga
+      } catch (e) {
+        console.warn("No se pudo eliminar la alerta del servidor:", e);
       }
 
       window.dispatchEvent(new CustomEvent('soingtel_reload_clientes'));
@@ -236,7 +243,7 @@ export function AlertasSuspensionModal({
                               <span className="text-sm line-clamp-3">{alerta.motivo}</span>
                             </TableCell>
                             <TableCell className="whitespace-normal px-2 text-xs">
-                              {new Date(alerta.fechaSuspension).toLocaleString()}
+                              {alerta.fechaSuspension ? new Date(alerta.fechaSuspension).toLocaleString('es-CO') : '-'}
                             </TableCell>
                             <TableCell className="whitespace-normal px-2">
                               <div className="flex flex-col gap-2">

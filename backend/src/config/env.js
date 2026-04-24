@@ -4,7 +4,7 @@ const { z } = require("zod");
 const envSchema = z.object({
   PORT: z.string().default("3001"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  CORS_ORIGINS: z.string().default("http://localhost:3000,http://localhost:5173"),
+  CORS_ORIGINS: z.string().default("http://localhost:3000,http://localhost:5173,https://soingtel-git-develop-laura-larrottas-projects.vercel.app"),
   DATABASE_URL: z.string().optional(),
   DATABASE_SSL: z.enum(["true", "false"]).default("false"),
   GOOGLE_SHEET_ID: z.string().optional(),
@@ -21,18 +21,34 @@ if (!parsed.success) {
 }
 
 const USUARIOS_VALIDOS = parsed.data.USERS.split(",").map((u) => {
-  const [usuario, contrasena, rol = "basic"] = u.split(":");
-  return { usuario: usuario.trim(), contrasena: contrasena.trim(), rol: rol.trim() };
+  const [usuario, contrasena, rol] = u.split(":");
+  return {
+    usuario: usuario.trim(),
+    contrasena: contrasena.trim(),
+    rol: rol ? rol.trim() : usuario.trim() // Si no hay rol, usar el nombre del usuario
+  };
 });
 
 module.exports = {
   port: parseInt(parsed.data.PORT) || 3001,
   nodeEnv: parsed.data.NODE_ENV,
-  cors: {
-    origin: parsed.data.CORS_ORIGINS.split(","),
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+ cors: {
+  origin: (origin, callback) => {
+    const allowedOrigins = parsed.data.CORS_ORIGINS.split(",");
+
+    // permitir requests sin origin (Postman, cron, etc)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("No permitido por CORS"));
   },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+},
   database: {
     connectionString: parsed.data.DATABASE_URL,
     ssl: parsed.data.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : false,

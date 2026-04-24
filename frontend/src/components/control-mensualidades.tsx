@@ -18,6 +18,7 @@ import {
   Wrench,
   ShieldCheck,
   Users,
+  Calculator,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -62,6 +63,7 @@ import { clientesService } from "@/services/clientesService";
 import { alertasService } from "@/services/alertasService";
 import { useMemo } from "react";
 import { facturasService } from "@/services/facturasService";
+import { healthManager } from "@/utils/healthManager";
 
 
 
@@ -118,11 +120,15 @@ const crearCliente = async (cliente: Cliente) => {
 };
 
  const cargarEstadisticas = async () => {
-  try {
-    const data = await clientesService.estadisticas();
-    setEstadisticas(data);
-  } catch {}
-};
+    try {
+      // Skip if server is known to be unavailable or in cooldown
+      if (!healthManager.isAvailable()) {
+        return;
+      }
+      const data = await clientesService.estadisticas();
+      setEstadisticas(data);
+    } catch {}
+  };
   const {
     data: clientes,
     setData: setClientes,
@@ -150,8 +156,7 @@ const crearCliente = async (cliente: Cliente) => {
 
   useEffect(() => {
     cargarEstadisticas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [clientes, cargarEstadisticas]);
 
   useEffect(() => {
     const handleReload = () => {
@@ -175,6 +180,17 @@ const crearCliente = async (cliente: Cliente) => {
     toast.success("Excel generado correctamente");
   } catch (error: any) {
     toast.error(error.message);
+  }
+};
+
+const recalcularEstadosClientes = async () => {
+  try {
+    toast.info("Recalculando estados de clientes...");
+    const result = await clientesService.recalcularEstados();
+    toast.success(`${result.actualizados} clientes actualizados`);
+    reloadClientes();
+  } catch (error: any) {
+    toast.error(error.message || "Error al recalcular estados");
   }
 };
 
@@ -806,6 +822,16 @@ const handleSaveClienteCompleto = async (
                 <Download className="h-4 w-4 mr-2" />
                 Exportar Clientes
               </Button>
+              {(userType === "admin" || userType === "facturacion") && (
+                <Button
+                  variant="outline"
+                  onClick={recalcularEstadosClientes}
+                  title="Recalcula el estado de cada cliente según su última factura"
+                >
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Recalcular Estados
+                </Button>
+              )}
             </div>
           </div>
 

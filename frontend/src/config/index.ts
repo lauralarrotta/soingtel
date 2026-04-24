@@ -12,7 +12,9 @@ export const api = {
   facturas: (kit: string) => `${API_CONFIG.BASE_URL}/clientes/${kit}/facturas`,
   alertasFacturacion: () => `${API_CONFIG.BASE_URL}/alertas_facturacion`,
   alertasSuspension: () => `${API_CONFIG.BASE_URL}/alertas_suspension`,
+  alertasSuspensionCrear: () => `${API_CONFIG.BASE_URL}/alertas_suspension/crear`,
   alertasReactivacion: () => `${API_CONFIG.BASE_URL}/alertas_reactivacion`,
+  alertasReactivacionCrear: () => `${API_CONFIG.BASE_URL}/alertas_reactivacion/crear`,
   health: () => `${API_CONFIG.BASE_URL}/health`,
   exportarSheets: () => `${API_CONFIG.BASE_URL}/exportar-sheets`,
 } as const;

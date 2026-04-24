@@ -66,6 +66,8 @@ class ClientesRepository {
           (SELECT COUNT(*) FROM ${facturaTable} WHERE cliente_id = c.id AND (estado_pago = 'pendiente' OR estado_pago = 'vencido')) = 0 AND
           (SELECT COUNT(*) FROM ${facturaTable} WHERE cliente_id = c.id) > 0
         )`);
+      } else if (estado === "sin_factura") {
+        where.push(`(SELECT COUNT(*) FROM ${facturaTable} WHERE cliente_id = c.id) = 0`);
       } else {
         where.push(`c.estado_pago = $${idx}`);
         values.push(estado);

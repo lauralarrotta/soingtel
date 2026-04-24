@@ -10,6 +10,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Badge } from "./ui/badge";
 import { motion } from "framer-motion";
+import { fetchWithRetry } from "@/utils/fetchWithRetry";
 
 interface DashboardHeaderProps {
   userType: string;
@@ -51,8 +52,8 @@ export function DashboardHeader({
 
       cargarAlertas();
 
-      // Actualizar cada segundo para reflejar cambios
-      const interval = setInterval(cargarAlertas, 1000);
+      // Actualizar cada 30 segundos para evitar rate limits
+      const interval = setInterval(cargarAlertas, 30000);
       return () => clearInterval(interval);
     }
 
@@ -75,15 +76,10 @@ export function DashboardHeader({
         }
 
         // Servidor
-        const token = localStorage.getItem("token");
         try {
           const [resSusp, resReac] = await Promise.all([
-            fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
+            fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_suspension`),
+            fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_reactivacion`),
           ]);
 
           if (resSusp.ok) {
@@ -106,8 +102,8 @@ export function DashboardHeader({
 
       cargarAlertasSoporte();
 
-      // Actualizar cada segundo para reflejar cambios
-      const interval = setInterval(cargarAlertasSoporte, 1000);
+      // Actualizar cada 30 segundos para evitar rate limits
+      const interval = setInterval(cargarAlertasSoporte, 30000);
       return () => clearInterval(interval);
     }
   }, [userType]);

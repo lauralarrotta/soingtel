@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
 const config = require("./config/env");
 const logger = require("./shared/utils/logger");
 const ApiResponse = require("./shared/utils/ApiResponse");
@@ -22,15 +21,12 @@ const app = express();
 // ===========================================
 // SEGURIDAD
 // ===========================================
+app.use(cors(config.cors));
+app.options("*", cors(config.cors));
 app.use(helmet());
-app.use(rateLimit({
-  windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.max,
-  message: ApiResponse.error(null, "Demasiadas solicitudes, intenta en 15 minutos", 429),
-}));
 
 // Middleware
-app.use(cors(config.cors));
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -39,15 +35,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
-app.use("/api", authRoutes);
-app.use("/api", authMiddleware, clientesRoutes);
-app.use("/api", authMiddleware, facturasRoutes);
-app.use("/api", authMiddleware, pagosRoutes);
-app.use("/api", authMiddleware, alertasRoutes);
-app.use("/api", debugRoutes);
+app.use((req, res, next) => {
+  console.log("Origin:", req.headers.origin);
+  next();
+});
 
-// Health
+// Health - sin auth, antes del rate limit para evitar bloqueos por monitoreo
 app.get("/api/health", async (req, res) => {
   const health = {
     status: "ok",
@@ -68,6 +61,14 @@ app.get("/api/health", async (req, res) => {
   return res.status(statusCode).json(health);
 });
 
+// Routes
+app.use("/api", authRoutes);
+app.use("/api", authMiddleware, clientesRoutes);
+app.use("/api", authMiddleware, facturasRoutes);
+app.use("/api", authMiddleware, pagosRoutes);
+app.use("/api", authMiddleware, alertasRoutes);
+app.use("/api", debugRoutes);
+
 // Exportar a Google Sheets
 app.post("/api/exportar-sheets", authMiddleware, async (req, res, next) => {
   try {
@@ -81,5 +82,5 @@ app.post("/api/exportar-sheets", authMiddleware, async (req, res, next) => {
 
 // Error handler
 app.use(errorHandler);
-
+console.log("CORS Origins:", config.cors);
 module.exports = app;

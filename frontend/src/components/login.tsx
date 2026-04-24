@@ -4,9 +4,11 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { ShieldCheck, Eye, EyeOff, Lock, User, Zap, Cpu, Globe } from "lucide-react";
+import { fetchWithRetry } from "@/utils/fetchWithRetry";
+import { API_CONFIG } from "@/config";
 
 interface LoginProps {
-  onLogin: (userType: string) => void;
+  onLogin: (userType: string, token?: string) => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
@@ -26,23 +28,35 @@ export function Login({ onLogin }: LoginProps) {
     []
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    setTimeout(() => {
-      if (username === "facturacion" && password === "facturacion123") {
-        onLogin("facturacion");
-      } else if (username === "soporte" && password === "soporte123") {
-        onLogin("soporte");
-      } else if (username === "admin" && password === "admin123") {
-        onLogin("admin");
+    try {
+      const response = await fetchWithRetry(`${API_CONFIG.BASE_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuario: username, contrasena: password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        localStorage.setItem("token", data.data.token);
+        onLogin(data.data.rol, data.data.token);
       } else {
-        setError("Acceso denegado. Credenciales inválidas.");
+        setError(data.message || "Credenciales inválidas");
       }
+    } catch (err: any) {
+      if (err.message?.includes("429") || err.message?.includes("Too Many Requests")) {
+        setError("Demasiados intentos. Espera un momento e intenta de nuevo.");
+      } else {
+        setError("Error de conexión. Intenta más tarde.");
+      }
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (

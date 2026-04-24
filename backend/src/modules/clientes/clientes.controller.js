@@ -91,6 +91,15 @@ class ClientesController {
       next(error);
     }
   }
+
+  async recalcularEstados(req, res, next) {
+    try {
+      const result = await clientesService.recalcularEstados(req.sede);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new ClientesController();

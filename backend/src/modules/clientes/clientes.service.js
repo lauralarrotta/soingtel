@@ -55,8 +55,10 @@ class ClientesService {
   }
 
   async actualizar(kit, campos, sede = "principal") {
-    validarFormatoKit(kit);
-    validarActualizarCliente(campos);
+    // Solo validar formato kit si se está cambiando a un valor diferente
+    if (campos.kit && campos.kit !== kit) {
+      validarFormatoKit(campos.kit);
+    }
 
     const table = sede === "fusagasuga" ? TABLAS.FUSAGASUGA : TABLAS.PRINCIPAL;
     const result = await clientesRepository.update(kit, campos, table);
@@ -95,6 +97,72 @@ class ClientesService {
   async obtenerEstadisticas(sede = "principal") {
     const table = sede === "fusagasuga" ? TABLAS.FUSAGASUGA : TABLAS.PRINCIPAL;
     return clientesRepository.getEstadisticas(table);
+  }
+
+  async recalcularEstados(sede = "principal") {
+    const table = sede === "fusagasuga" ? TABLAS.FUSAGASUGA : TABLAS.PRINCIPAL;
+
+    // Obtener todos los clientes activos
+    const clientes = await clientesRepository.findAllForExport(table);
+
+    let actualizados = 0;
+    let errores = [];
+
+    for (const cliente of clientes) {
+      try {
+        // Obtener facturas del cliente ordenadas por fecha
+        const facturas = await facturasRepository.findByClienteId(cliente.id);
+
+        if (!facturas || facturas.length === 0) {
+          // Sin facturas -> pendiente
+          if (cliente.estado_pago !== "pendiente" || cliente.estado_facturacion !== "facturado") {
+            await clientesRepository.update(cliente.kit, {
+              estado_pago: "pendiente",
+              estado_facturacion: "facturado"
+            }, table);
+            actualizados++;
+          }
+          continue;
+        }
+
+        // Ordenar por fecha descendente para obtener la más reciente
+        const facturasOrdenadas = facturas.sort((a, b) =>
+          new Date(b.fecha) - new Date(a.fecha)
+        );
+        const ultimaFactura = facturasOrdenadas[0];
+        const estadoPago = ultimaFactura.estado_pago;
+
+        let nuevoEstadoPago = "pendiente";
+        let nuevoEstadoFacturacion = "facturado";
+
+        if (estadoPago === "pagado") {
+          nuevoEstadoPago = "confirmado";
+          nuevoEstadoFacturacion = "facturado";
+        } else if (estadoPago === "roc") {
+          nuevoEstadoPago = "pendiente";
+          nuevoEstadoFacturacion = "ROC";
+        } else if (estadoPago === "ppc") {
+          nuevoEstadoPago = "pendiente";
+          nuevoEstadoFacturacion = "PPC";
+        } else if (estadoPago === "pendiente" || estadoPago === "vencido") {
+          nuevoEstadoPago = "pendiente";
+          nuevoEstadoFacturacion = "facturado";
+        }
+
+        // Solo actualizar si hay cambio
+        if (cliente.estado_pago !== nuevoEstadoPago || cliente.estado_facturacion !== nuevoEstadoFacturacion) {
+          await clientesRepository.update(cliente.kit, {
+            estado_pago: nuevoEstadoPago,
+            estado_facturacion: nuevoEstadoFacturacion
+          }, table);
+          actualizados++;
+        }
+      } catch (err) {
+        errores.push({ kit: cliente.kit, error: err.message });
+      }
+    }
+
+    return { message: "Estados recalculados", actualizados, errores };
   }
 
   async importar({ clientes, usuario }, sede = "principal") {

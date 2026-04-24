@@ -17,5 +17,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+     chunkSizeWarningLimit: 1000, // o el valor que necesites en KB
   },
 });

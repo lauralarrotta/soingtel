@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { fetchWithRetry } from "../utils/fetchWithRetry";
+import { healthManager } from "../utils/healthManager";
 import { API_CONFIG } from "@/config";
 
 function safeParse<T>(value: string | null, fallback: T): T {
@@ -12,297 +13,261 @@ function safeParse<T>(value: string | null, fallback: T): T {
   }
 }
 
-
 export function useLocalPostgres<T>(
-    key: string,
+  key: string,
   initialValue: T,
   mergeKey?: string,
   page: number = 1,
   limit: number = 100,
-  filters: Record<string, any> = {} // ✅ NUEVO
+  filters: Record<string, any> = {}
 ) {
   const [data, setData] = useState<T>(initialValue);
   const [totalCount, setTotalCount] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [serverAvailable, setServerAvailable] = useState(true);
   const initialValueRef = useRef(initialValue);
-  const lastSaveTimestamp = useRef<number>(0); 
+  const lastSaveTimestamp = useRef<number>(0);
   const [pageState, setPageState] = useState(page);
+  const isMountedRef = useRef(true);
+  const loadAttemptRef = useRef(0);
 
-  // Verificar si el servidor está disponible
-  const checkServerHealth = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/health`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      const isAvailable = response.ok;
-      setServerAvailable(isAvailable);
-      return isAvailable;
-    } catch (err) {
-      setServerAvailable(false);
-      return false;
-    }
+  // Suscribirse a cambios de disponibilidad del health manager global
+  useEffect(() => {
+    const unsubscribe = healthManager.subscribe((available) => {
+      if (isMountedRef.current) {
+        setServerAvailable(available);
+      }
+    });
+    setServerAvailable(healthManager.isAvailable());
+    return unsubscribe;
   }, []);
 
-  // Cargar datos desde el servidor o localStorage
-  const loadData = useCallback(async () => {
+  // Función para convertir datos del servidor (snake_case -> camelCase)
+  const convertServerData = useCallback((serverData: any[]): any[] => {
+    if (!Array.isArray(serverData)) return serverData;
+    return serverData.map((c: any) => ({
+      ...c,
+      nombrecliente: c.nombre_cliente,
+      cuentastarlink: c.cuenta_starlink,
+      costoplan: c.costo_plan,
+      valorFactura: c.valor_factura,
+      valorSoporte: c.valor_soporte,
+      fechaActivacion: c.fecha_activacion,
+      tipoSoporte: c.tipo_soporte,
+    }));
+  }, []);
+
+  // Función para obtener URL con filtros
+  const buildUrl = useCallback(() => {
+    let url = `${API_CONFIG.BASE_URL}/${key}?page=${pageState}&limit=${limit}`;
+    if (filters) {
+      Object.entries(filters).forEach(([filterKey, value]) => {
+        if (value && value !== "todos") {
+          url += `&${filterKey}=${encodeURIComponent(value)}`;
+        }
+      });
+    }
+    return url;
+  }, [key, pageState, limit, filters]);
+
+  // Función principal de carga
+  const loadData = useCallback(async (options: { background?: boolean } = {}) => {
+    if (!isMountedRef.current) return;
+    const { background = false } = options;
+    const attempt = ++loadAttemptRef.current;
+
+    // Si es carga en background, NO bloquear nada
+    if (background) {
+      // Solo intentar cargar si ha pasado tiempo suficiente desde el último intento
+      const timeSinceLastAttempt = Date.now() - lastSaveTimestamp.current;
+      if (timeSinceLastAttempt < 2000) return;
+
+      try {
+        const isAvailable = await Promise.race([
+          healthManager.check(),
+          new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 2500))
+        ]);
+
+        if (!isAvailable || attempt !== loadAttemptRef.current) return;
+
+        const url = buildUrl();
+        const response = await Promise.race([
+          fetchWithRetry(url, { signal: AbortSignal.timeout(10000) }),
+          new Promise<Response>((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000))
+        ]);
+
+        if (!response?.ok || attempt !== loadAttemptRef.current) return;
+
+        const result = await response.json();
+        let serverData = (key === "clientes" || key === "clientes_fusagasuga")
+          ? result?.data || []
+          : Array.isArray(result) ? result : result?.[key];
+
+        if (!serverData || !Array.isArray(serverData)) return;
+
+        serverData = convertServerData(serverData);
+        localStorage.setItem(`soingtel_${key}`, JSON.stringify(serverData));
+        setData(serverData as T);
+
+        if (key === "clientes" || key === "clientes_fusagasuga") {
+          setTotalCount(result?.total || 0);
+        }
+      } catch (err) {
+        // Silencioso en background load
+      }
+      return;
+    }
+
+    // Carga normal (no background)
     try {
       setLoading(true);
       setError(null);
 
-      // Primero cargar desde localStorage para mostrar datos rápidamente
+      // Cargar datos locales primero
       const localData = localStorage.getItem(`soingtel_${key}`);
-
       if (localData) {
-        console.log(`[useLocalPostgres] Cargando datos locales para ${key}`);
-
         const parsed = safeParse(localData, initialValueRef.current);
-
         setData(parsed);
-        setLoading(false);
       }
 
-      // Verificar si el servidor está disponible
-      const isAvailable = await checkServerHealth();
+      // Verificar servidor
+      const isAvailable = await Promise.race([
+        healthManager.check(),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3000))
+      ]);
+
       if (!isAvailable) {
-        console.log(
-          `[useLocalPostgres] Servidor no disponible, usando datos locales para ${key}`,
-        );
+        setServerAvailable(false);
         setError("Servidor no disponible. Usando datos locales.");
-        if (!localData) {
-          setData(initialValueRef.current);
-        }
-        setLoading(false);
         return;
       }
 
-      console.log(`[useLocalPostgres] Cargando ${key} desde ${API_CONFIG.BASE_URL}/${key} (page: ${page}, limit: ${limit})`);
+      setServerAvailable(true);
 
-   let url = `${API_CONFIG.BASE_URL}/${key}?page=${pageState}&limit=${limit}`;
-
-// ✅ agregar filtros dinámicos
-if (filters) {
-  Object.entries(filters).forEach(([filterKey, value]) => {
-    if (value && value !== "todos") {
-      url += `&${filterKey}=${encodeURIComponent(value)}`;
-    }
-  });
-}
+      // Cargar del servidor
+      const url = buildUrl();
       const response = await fetchWithRetry(url, {
-  signal: AbortSignal.timeout(5000),
-});
-
-     
-
-      console.log(`[useLocalPostgres] Respuesta status:`, response.status);
+        signal: AbortSignal.timeout(15000),
+      });
 
       if (!response.ok) {
         throw new Error(`Error al cargar ${key}: ${response.statusText}`);
       }
 
       const result = await response.json();
-      
-      console.log(`[useLocalPostgres] Datos recibidos para ${key}:`, result);
-
-     let serverData: any;
-
-if (key === "clientes" || key === "clientes_fusagasuga") {
-  serverData = result?.data || [];
-  setTotalCount(result?.total || 0); // ✅ ESTA LÍNEA ES LA CLAVE
-} else {
-  serverData = Array.isArray(result) ? result : result?.[key];
-}
+      let serverData = (key === "clientes" || key === "clientes_fusagasuga")
+        ? result?.data || []
+        : Array.isArray(result) ? result : result?.[key];
 
       if (!serverData) {
         serverData = initialValueRef.current;
       }
 
-      // Convertir snake_case del backend a camelCase del frontend
-      if ((key === "clientes" || key === "clientes_fusagasuga") && Array.isArray(serverData)) {
-        serverData = serverData.map((c: any) => ({
+      serverData = convertServerData(serverData);
+
+      setData(serverData as T);
+      localStorage.setItem(`soingtel_${key}`, JSON.stringify(serverData));
+
+      if (key === "clientes" || key === "clientes_fusagasuga") {
+        setTotalCount(result?.total || 0);
+      }
+    } catch (err) {
+      console.error(`[useLocalPostgres] Error al cargar ${key}:`, err);
+      setServerAvailable(false);
+      healthManager.setUnavailable();
+      setError("No se pudo conectar al servidor.");
+    } finally {
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [key, pageState, limit, filters, mergeKey, buildUrl, convertServerData]);
+
+  // Guardar datos
+  const saveData = useCallback(async (newData: T) => {
+    try {
+      lastSaveTimestamp.current = Date.now();
+
+      const cleanData = (key === "clientes" || key === "clientes_fusagasuga") && Array.isArray(newData)
+        ? newData.map((cliente: any) => ({
+            ...cliente,
+            kit: cliente.kit?.trim() || `KIT-${Math.floor(Math.random() * 100000)}`,
+          }))
+        : newData;
+
+      setData(cleanData as T);
+      localStorage.setItem(`soingtel_${key}`, JSON.stringify(cleanData));
+
+      if (!healthManager.isAvailable()) {
+        return;
+      }
+
+      let dataToSend = cleanData;
+      if ((key === "clientes" || key === "clientes_fusagasuga") && Array.isArray(cleanData)) {
+        dataToSend = cleanData.map((c: any) => ({
           ...c,
-          nombrecliente: c.nombre_cliente,
-          cuentastarlink: c.cuenta_starlink,
-          costoplan: c.costo_plan,
-          valorFactura: c.valor_factura,
-          valorSoporte: c.valor_soporte,
-          fechaActivacion: c.fecha_activacion,
-          tipoSoporte: c.tipo_soporte,
+          nombre_cliente: c.nombrecliente,
+          cuenta_starlink: c.cuentastarlink,
+          costo_plan: c.costoplan,
+          valor_factura: c.valorFactura,
+          valor_soporte: c.valorSoporte,
+          fecha_activacion: c.fechaActivacion,
+          tipo_soporte: c.tipoSoporte,
         }));
       }
 
-      serverData = serverData as T;
-
-      setData((currentData) => {
-        if (
-          mergeKey &&
-          Array.isArray(currentData) &&
-          Array.isArray(serverData)
-        ) {
-          const map = new Map(
-            currentData.map((item: any) => [item[mergeKey], item]),
-          );
-
-          serverData.forEach((item: any) => {
-            const existing = map.get(item[mergeKey]);
-
-            map.set(item[mergeKey], {
-              ...existing,
-
-              // SOLO sobreescribir si el backend trae valor
-              ...Object.fromEntries(
-                Object.entries(item).filter(
-                  ([_, value]) => value !== null && value !== undefined,
-                ),
-              ),
-            });
-          });
-
-          const merged = Array.from(map.values()) as T;
-          localStorage.setItem(`soingtel_${key}`, JSON.stringify(merged));
-          return merged;
-        }
-
-        localStorage.setItem(`soingtel_${key}`, JSON.stringify(serverData));
-        return serverData;
+      const response = await fetch(`${API_CONFIG.BASE_URL}/${key}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: dataToSend }),
+        signal: AbortSignal.timeout(5000),
       });
+
+      if (!response.ok) {
+        throw new Error(`Error al guardar ${key}: ${response.statusText}`);
+      }
     } catch (err) {
-      console.error(`[useLocalPostgres] Error al cargar ${key}:`, err);
-
-      // Marcar el servidor como no disponible
-      setServerAvailable(false);
-
-      // Mostrar error solo si no tenemos datos locales
-      const localData = localStorage.getItem(`soingtel_${key}`);
-      if (localData) {
-        console.log(
-          `[useLocalPostgres] Usando datos locales después de error para ${key}`,
-        );
-        setError("Modo offline: usando datos locales");
-      } else {
-        console.log(
-          `[useLocalPostgres] Usando valor inicial después de error para ${key}`,
-        );
-        setData(initialValueRef.current);
-        setError(
-          "No se pudo conectar al servidor. Trabajando en modo offline.",
-        );
-      }
-    } finally {
-      setLoading(false);
+      console.error(`[useLocalPostgres] Error al guardar ${key} en servidor:`, err);
+      healthManager.setUnavailable();
     }
-  }, [key, checkServerHealth, pageState, limit, filters]);
+  }, [key]);
 
-  // Guardar datos en el servidor y localStorage
-  const saveData = useCallback(
-    async (newData: T) => {
-      try {
-        lastSaveTimestamp.current = Date.now();
-
-        const cleanData =
-          (key === "clientes" || key === "clientes_fusagasuga") && Array.isArray(newData)
-            ? newData.map((cliente: any) => ({
-                ...cliente,
-                kit:
-                  cliente.kit && cliente.kit.trim() !== ""
-                    ? cliente.kit
-                    : `KIT-${Math.floor(Math.random() * 100000)}`,
-              }))
-            : newData;
-
-        // ✅ usar cleanData aquí también
-        setData(cleanData as T);
-        localStorage.setItem(`soingtel_${key}`, JSON.stringify(cleanData));
-
-        if (!serverAvailable) {
-          console.log(`[useLocalPostgres] Guardando solo localmente ${key}`);
-          return;
-        }
-
-        // Convertir camelCase del frontend a snake_case del backend antes de enviar
-        let dataToSend = cleanData;
-        if ((key === "clientes" || key === "clientes_fusagasuga") && Array.isArray(cleanData)) {
-          dataToSend = cleanData.map((c: any) => ({
-            ...c,
-            nombre_cliente: c.nombrecliente,
-            cuenta_starlink: c.cuentastarlink,
-            costo_plan: c.costoplan,
-            valor_factura: c.valorFactura,
-            valor_soporte: c.valorSoporte,
-            fecha_activacion: c.fechaActivacion,
-            tipo_soporte: c.tipoSoporte,
-          }));
-        }
-
-        console.log("Enviando al backend:", dataToSend);
-        const response = await fetch(`${API_CONFIG.BASE_URL}/${key}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ [key]: dataToSend }),
-          signal: AbortSignal.timeout(5000),
-        });
-
-        if (!response.ok) {
-          const text = await response.text();
-          console.error("Respuesta backend:", text);
-          throw new Error(`Error al guardar ${key}: ${response.statusText}`);
-        }
-
-        console.log(
-          `[useLocalPostgres] Datos guardados en servidor para ${key}`,
-        );
-      } catch (err) {
-        console.error(
-          `[useLocalPostgres] Error al guardar ${key} en servidor:`,
-          err,
-        );
-        setServerAvailable(false);
-      }
-    },
-    [key, serverAvailable],
-  );
-
-  // Cargar datos al montar el componente
+  // Carga inicial en background
   useEffect(() => {
-  loadData();
-}, [pageState, limit, JSON.stringify(filters), key]);
+    isMountedRef.current = true;
+    loadData({ background: true });
 
-  // Recargar datos periódicamente (cada 30 segundos) para sincronizar con otros usuarios
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [key, pageState, limit, JSON.stringify(filters)]);
+
+  // Recarga periódica cada 60s
   useEffect(() => {
     if (!serverAvailable) return;
 
     const interval = setInterval(() => {
-      // NO recargar si se guardaron datos hace menos de 10 segundos
-      // Esto evita sobrescribir cambios recientes
       const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
       if (timeSinceLastSave < 10000) {
-        // 10 segundos
-        console.log(
-          `[useLocalPostgres] Saltando recarga automática (cambios recientes para ${key})`,
-        );
         return;
       }
-
-      console.log(`[useLocalPostgres] Recarga automática para ${key}`);
-      loadData();
-    }, 30000); // 30 segundos
+      loadData({ background: true });
+    }, 60000);
 
     return () => clearInterval(interval);
-  }, [loadData, serverAvailable]);
+  }, [serverAvailable, key, loadData]);
 
-return {
-  data,
-  totalCount,
-  page: pageState,
-  setPage: setPageState,
-  setData,
-  saveData,
-  loading,
-  error,
-  reload: loadData,
-  serverAvailable,
-};
+  return {
+    data,
+    totalCount,
+    page: pageState,
+    setPage: setPageState,
+    setData,
+    saveData,
+    loading,
+    error,
+    reload: () => loadData({ background: false }),
+    serverAvailable,
+  };
 }
