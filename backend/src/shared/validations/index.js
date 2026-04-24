@@ -87,7 +87,9 @@ function validarActualizarFactura(data) {
     }
   }
 
-  if (data.estado_pago && !ESTADOS_PAGO_VALIDOS.includes(data.estado_pago)) {
+  // Aceptar tanto estado_pago (snake_case) como estadoPago (camelCase)
+  const estadoPago = data.estado_pago || data.estadoPago;
+  if (estadoPago && !ESTADOS_PAGO_VALIDOS.includes(estadoPago)) {
     errores.push(`Estado de pago inválido. Estados válidos: ${ESTADOS_PAGO_VALIDOS.join(", ")}`);
   }
 

@@ -33,7 +33,12 @@ class FacturasController {
       const result = await facturasService.actualizar(
         req.params.kit,
         req.params.numeroFactura,
-        req.body
+        {
+          numero: req.body.numero,
+          fecha: req.body.fecha,
+          estadoPago: req.body.estadoPago || req.body.estado_pago,
+          periodo: req.body.periodo,
+        }
       );
       res.json(result);
     } catch (error) {
