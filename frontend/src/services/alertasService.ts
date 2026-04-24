@@ -2,6 +2,13 @@ import { API_CONFIG, api } from "@/config";
 import { fetchWithRetry } from "@/utils/fetchWithRetry";
 import { Cliente } from "@/types/cliente";
 
+const getHeaders = () => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const token = localStorage.getItem("token");
+  if (token) headers["Authorization"] = `Basic ${token}`;
+  return headers;
+};
+
 export interface AlertaFacturacionPayload {
   kit: string;
   nombre: string;
@@ -21,10 +28,16 @@ export interface AlertaReactivacionPayload extends AlertaFacturacionPayload {
 }
 
 export const alertasService = {
+  obtenerSuspension: async () => {
+    const res = await fetchWithRetry(api.alertasSuspension(), { headers: getHeaders() });
+    if (!res.ok && res.status !== 401) throw new Error("Error cargando alertas de suspensión");
+    return res.json();
+  },
+
   crearFacturacion: async (payload: AlertaFacturacionPayload) => {
     const res = await fetchWithRetry(api.alertasFacturacion(), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Error creando alerta de facturación");
@@ -34,7 +47,7 @@ export const alertasService = {
   crearSuspension: async (payload: AlertaSuspensionPayload) => {
     const res = await fetchWithRetry(api.alertasSuspensionCrear(), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Error creando alerta de suspensión");
@@ -44,7 +57,7 @@ export const alertasService = {
   crearReactivacion: async (payload: AlertaReactivacionPayload) => {
     const res = await fetchWithRetry(api.alertasReactivacionCrear(), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Error creando alerta de reactivación");
@@ -52,15 +65,21 @@ export const alertasService = {
   },
 
   obtenerFacturacion: async () => {
-    const res = await fetchWithRetry(api.alertasFacturacion());
-    if (!res.ok) throw new Error("Error cargando alertas");
+    const res = await fetchWithRetry(api.alertasFacturacion(), { headers: getHeaders() });
+    if (!res.ok && res.status !== 401) throw new Error("Error cargando alertas");
+    return res.json();
+  },
+
+  obtenerReactivacion: async () => {
+    const res = await fetchWithRetry(api.alertasReactivacion(), { headers: getHeaders() });
+    if (!res.ok && res.status !== 401) throw new Error("Error cargando alertas de reactivación");
     return res.json();
   },
 
   marcarCompletada: async (id: string) => {
     const res = await fetchWithRetry(`${api.alertasFacturacion()}/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify({ completada: true }),
     });
     if (!res.ok) throw new Error("Error marcando alerta");
@@ -70,7 +89,7 @@ export const alertasService = {
   crearAlertaNuevoCliente: async (cliente: Cliente, sede?: "principal" | "fusagasuga") => {
     const res = await fetchWithRetry(api.alertasFacturacion(), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify({
         kit: cliente.kit,
         nombre: cliente.nombrecliente,
