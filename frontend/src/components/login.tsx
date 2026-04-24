@@ -4,6 +4,8 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { ShieldCheck, Eye, EyeOff, Lock, User, Zap, Cpu, Globe } from "lucide-react";
+import { fetchWithRetry } from "@/utils/fetchWithRetry";
+import { API_CONFIG } from "@/config";
 
 interface LoginProps {
   onLogin: (userType: string, token?: string) => void;
@@ -32,7 +34,7 @@ export function Login({ onLogin }: LoginProps) {
     setLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://soingtel.onrender.com/api'}/login`, {
+      const response = await fetchWithRetry(`${API_CONFIG.BASE_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ usuario: username, contrasena: password }),
@@ -46,8 +48,12 @@ export function Login({ onLogin }: LoginProps) {
       } else {
         setError(data.message || "Credenciales inválidas");
       }
-    } catch (err) {
-      setError("Error de conexión. Intenta más tarde.");
+    } catch (err: any) {
+      if (err.message?.includes("429") || err.message?.includes("Too Many Requests")) {
+        setError("Demasiados intentos. Espera un momento e intenta de nuevo.");
+      } else {
+        setError("Error de conexión. Intenta más tarde.");
+      }
     } finally {
       setLoading(false);
     }
