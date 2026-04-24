@@ -1,6 +1,3 @@
-const RATE_LIMIT_KEY = "soingtel_rate_limit_until";
-const COOLDOWN_MS = 5000; // Reducido a 5 segundos de cooldown
-
 export const fetchWithRetry = async (
   url: string,
   options?: RequestInit,
@@ -15,25 +12,8 @@ export const fetchWithRetry = async (
     Object.entries(h).forEach(([k, v]) => { headers[k] = v; });
   }
 
-  // Check si estamos en cooldown por rate limit
-  const rateLimitUntil = localStorage.getItem(RATE_LIMIT_KEY);
-  if (rateLimitUntil && Date.now() < parseInt(rateLimitUntil)) {
-    const waitTime = Math.ceil((parseInt(rateLimitUntil) - Date.now()) / 1000);
-    console.warn(`[fetchWithRetry] Rate limit activo, esperando ${waitTime}s`);
-    throw new Error(`Rate limited. Wait ${waitTime}s`);
-  }
-
   try {
     const res = await fetch(url, { ...options, headers });
-
-    if (res.status === 429) {
-      // Rate limit detectado - guardar timestamp de cooldown
-      const cooldownUntil = Date.now() + COOLDOWN_MS;
-      localStorage.setItem(RATE_LIMIT_KEY, cooldownUntil.toString());
-      console.warn(`[fetchWithRetry] 429 Rate Limit detectado. Cooldown hasta ${new Date(cooldownUntil).toISOString()}`);
-      throw new Error("Rate limited (429)");
-    }
-
     if (!res.ok) throw new Error("Error en request");
     return res;
   } catch (err: any) {
@@ -54,5 +34,5 @@ export const fetchWithRetry = async (
 };
 
 export const clearRateLimit = () => {
-  localStorage.removeItem(RATE_LIMIT_KEY);
+  // Ya no es necesario
 };

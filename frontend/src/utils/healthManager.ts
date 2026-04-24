@@ -16,8 +16,6 @@ interface HealthState {
 
 const HEALTH_CACHE_TTL = 30000; // 30 segundos de caché
 const HEALTH_CHECK_TIMEOUT = 5000; // 5 segundos timeout
-const COOLDOWN_429 = 60000; // 60 segundos de cooldown tras 429
-const COOLDOWN_ERROR = 15000; // 15 segundos de cooldown tras error
 
 let globalHealthState: HealthState = {
   available: true,
@@ -32,10 +30,6 @@ let currentHealthCheck: Promise<boolean> | null = null;
 export const healthManager = {
   // Obtener estado actual (sincrónico)
   isAvailable(): boolean {
-    // Si estamos en cooldown post-429 o error, no permitir requests
-    if (Date.now() < globalHealthState.cooldownUntil) {
-      return false;
-    }
     if (Date.now() - globalHealthState.timestamp < HEALTH_CACHE_TTL) {
       return globalHealthState.available;
     }
@@ -52,11 +46,6 @@ export const healthManager = {
 
   // Verificar salud del servidor
   async check(): Promise<boolean> {
-    // Si estamos en cooldown, devolver estado actual inmediatamente
-    if (Date.now() < globalHealthState.cooldownUntil) {
-      return globalHealthState.available;
-    }
-
     // Si hay una verificación en curso, devolver esa promesa
     if (currentHealthCheck) {
       return currentHealthCheck;
@@ -76,20 +65,6 @@ export const healthManager = {
           signal: AbortSignal.timeout(HEALTH_CHECK_TIMEOUT),
         });
 
-        // Manejar rate limit (429)
-        if (response.status === 429) {
-          const newCooldown = Date.now() + COOLDOWN_429;
-          globalHealthState = {
-            available: globalHealthState.available, // Mantener último estado conocido
-            timestamp: Date.now(),
-            checking: false,
-            subscribers: globalHealthState.subscribers,
-            cooldownUntil: newCooldown,
-          };
-          console.warn(`[healthManager] Rate limited. Cooldown hasta ${new Date(newCooldown).toISOString()}`);
-          return globalHealthState.available;
-        }
-
         const isAvailable = response.ok;
 
         // Actualizar estado global
@@ -107,13 +82,12 @@ export const healthManager = {
         return isAvailable;
       } catch (err) {
         // Error de red o timeout - establecer cooldown corto
-        const newCooldown = Date.now() + COOLDOWN_ERROR;
         globalHealthState = {
           available: false,
           timestamp: Date.now(),
           checking: false,
           subscribers: globalHealthState.subscribers,
-          cooldownUntil: newCooldown,
+          cooldownUntil: 0,
         };
 
         globalHealthState.subscribers.forEach((cb) => cb(false));
@@ -141,7 +115,7 @@ export const healthManager = {
       timestamp: Date.now(),
       checking: false,
       subscribers: globalHealthState.subscribers,
-      cooldownUntil: Date.now() + COOLDOWN_ERROR,
+      cooldownUntil: 0,
     };
     globalHealthState.subscribers.forEach((cb) => cb(false));
   },

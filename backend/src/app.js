@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
 const config = require("./config/env");
 const logger = require("./shared/utils/logger");
 const ApiResponse = require("./shared/utils/ApiResponse");
@@ -61,13 +60,6 @@ app.get("/api/health", async (req, res) => {
   const statusCode = health.status === "ok" ? 200 : 503;
   return res.status(statusCode).json(health);
 });
-
-// Aplicar rate limit después del health check
-app.use(rateLimit({
-  windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.max, // Te sugiero aumentar este valor en tu archivo de configuración (.env)
-  message: ApiResponse.error(null, "Demasiadas solicitudes, intenta en 15 minutos", 429),
-}));
 
 // Routes
 app.use("/api", authRoutes);
