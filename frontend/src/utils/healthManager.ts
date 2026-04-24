@@ -3,6 +3,7 @@ import { API_CONFIG } from "@/config";
 // ========================================
 // HEALTH CHECK MANAGER GLOBAL
 // Evita múltiples llamadas de health check simultáneas
+// Respeta rate limits del servidor (429)
 // ========================================
 
 interface HealthState {
@@ -10,16 +11,20 @@ interface HealthState {
   timestamp: number;
   checking: boolean;
   subscribers: Set<(available: boolean) => void>;
+  cooldownUntil: number; // Timestamp hasta el cual no hacer nuevos requests
 }
 
-const HEALTH_CACHE_TTL = 15000; // 15 segundos de caché
+const HEALTH_CACHE_TTL = 30000; // 30 segundos de caché
 const HEALTH_CHECK_TIMEOUT = 5000; // 5 segundos timeout
+const COOLDOWN_429 = 60000; // 60 segundos de cooldown tras 429
+const COOLDOWN_ERROR = 15000; // 15 segundos de cooldown tras error
 
 let globalHealthState: HealthState = {
   available: true,
   timestamp: 0,
   checking: false,
   subscribers: new Set(),
+  cooldownUntil: 0,
 };
 
 let currentHealthCheck: Promise<boolean> | null = null;
@@ -27,6 +32,9 @@ let currentHealthCheck: Promise<boolean> | null = null;
 export const healthManager = {
   // Obtener estado actual (sincrónico)
   isAvailable(): boolean {
+    if (Date.now() < globalHealthState.cooldownUntil) {
+      return globalHealthState.available;
+    }
     if (Date.now() - globalHealthState.timestamp < HEALTH_CACHE_TTL) {
       return globalHealthState.available;
     }
@@ -43,6 +51,11 @@ export const healthManager = {
 
   // Verificar salud del servidor
   async check(): Promise<boolean> {
+    // Si estamos en cooldown, devolver estado actual inmediatamente
+    if (Date.now() < globalHealthState.cooldownUntil) {
+      return globalHealthState.available;
+    }
+
     // Si hay una verificación en curso, devolver esa promesa
     if (currentHealthCheck) {
       return currentHealthCheck;
@@ -62,6 +75,20 @@ export const healthManager = {
           signal: AbortSignal.timeout(HEALTH_CHECK_TIMEOUT),
         });
 
+        // Manejar rate limit (429)
+        if (response.status === 429) {
+          const newCooldown = Date.now() + COOLDOWN_429;
+          globalHealthState = {
+            available: globalHealthState.available, // Mantener último estado conocido
+            timestamp: Date.now(),
+            checking: false,
+            subscribers: globalHealthState.subscribers,
+            cooldownUntil: newCooldown,
+          };
+          console.warn(`[healthManager] Rate limited. Cooldown hasta ${new Date(newCooldown).toISOString()}`);
+          return globalHealthState.available;
+        }
+
         const isAvailable = response.ok;
 
         // Actualizar estado global
@@ -70,6 +97,7 @@ export const healthManager = {
           timestamp: Date.now(),
           checking: false,
           subscribers: globalHealthState.subscribers,
+          cooldownUntil: 0,
         };
 
         // Notificar a suscriptores
@@ -77,11 +105,14 @@ export const healthManager = {
 
         return isAvailable;
       } catch (err) {
+        // Error de red o timeout - establecer cooldown corto
+        const newCooldown = Date.now() + COOLDOWN_ERROR;
         globalHealthState = {
           available: false,
           timestamp: Date.now(),
           checking: false,
           subscribers: globalHealthState.subscribers,
+          cooldownUntil: newCooldown,
         };
 
         globalHealthState.subscribers.forEach((cb) => cb(false));
@@ -94,9 +125,10 @@ export const healthManager = {
     return currentHealthCheck;
   },
 
-  // Forzar una nueva verificación (ignora caché)
+  // Forzar una nueva verificación (ignora caché y cooldown)
   async forceCheck(): Promise<boolean> {
-    // Limpiar caché
+    // Limpiar cooldown y caché
+    globalHealthState.cooldownUntil = 0;
     globalHealthState.timestamp = 0;
     return this.check();
   },
@@ -108,6 +140,7 @@ export const healthManager = {
       timestamp: Date.now(),
       checking: false,
       subscribers: globalHealthState.subscribers,
+      cooldownUntil: Date.now() + COOLDOWN_ERROR,
     };
     globalHealthState.subscribers.forEach((cb) => cb(false));
   },

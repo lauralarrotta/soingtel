@@ -141,8 +141,7 @@ export function FusagasugaMensualidades({
 
   useEffect(() => {
     cargarEstadisticas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [clientes]);
 
   useEffect(() => {
     const handleReload = () => {

@@ -50,14 +50,13 @@ export function AgregarFacturaModal({
       // Obtener el periodo bimestral actual
       const periodosBimestrales = [
         "Ene-Feb",
-        "Ene-Feb",
+        "Feb-Mar",
         "Mar-Abr",
-        "Mar-Abr",
+        "Abr-May",
         "May-Jun",
-        "May-Jun",
+        "Jun-Jul",
         "Jul-Ago",
-        "Jul-Ago",
-        "Sep-Oct",
+        "Ago-Sep",
         "Sep-Oct",
         "Oct-Nov",
         "Nov-Dic",
@@ -184,9 +183,13 @@ export function AgregarFacturaModal({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Ene-Feb">Ene-Feb</SelectItem>
+                    <SelectItem value="Feb-Mar">Feb-Mar</SelectItem>
                     <SelectItem value="Mar-Abr">Mar-Abr</SelectItem>
+                    <SelectItem value="Abr-May">Abr-May</SelectItem>
                     <SelectItem value="May-Jun">May-Jun</SelectItem>
+                    <SelectItem value="Jun-Jul">Jun-Jul</SelectItem>
                     <SelectItem value="Jul-Ago">Jul-Ago</SelectItem>
+                    <SelectItem value="Ago-Sep">Ago-Sep</SelectItem>
                     <SelectItem value="Sep-Oct">Sep-Oct</SelectItem>
                     <SelectItem value="Oct-Nov">Oct-Nov</SelectItem>
                     <SelectItem value="Nov-Dic">Nov-Dic</SelectItem>

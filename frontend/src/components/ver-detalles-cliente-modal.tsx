@@ -293,7 +293,7 @@ export function VerDetallesClienteModal({
                           <p className="text-xs text-muted-foreground">
                             {factura.periodo &&
                               `Periodo: ${factura.periodo} | `}
-                            Fecha: {factura.fecha}
+                            Fecha: {factura.fecha ? new Date(factura.fecha).toLocaleDateString('es-CO') : '-'}
                           </p>
                         </div>
 

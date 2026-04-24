@@ -32,7 +32,7 @@ export const alertasService = {
   },
 
   crearSuspension: async (payload: AlertaSuspensionPayload) => {
-    const res = await fetchWithRetry(api.alertasSuspension(), {
+    const res = await fetchWithRetry(api.alertasSuspensionCrear(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -42,7 +42,7 @@ export const alertasService = {
   },
 
   crearReactivacion: async (payload: AlertaReactivacionPayload) => {
-    const res = await fetchWithRetry(api.alertasReactivacion(), {
+    const res = await fetchWithRetry(api.alertasReactivacionCrear(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

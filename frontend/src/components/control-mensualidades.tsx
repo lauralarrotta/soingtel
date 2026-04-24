@@ -151,8 +151,7 @@ const crearCliente = async (cliente: Cliente) => {
 
   useEffect(() => {
     cargarEstadisticas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [clientes, cargarEstadisticas]);
 
   useEffect(() => {
     const handleReload = () => {

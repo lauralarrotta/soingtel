@@ -272,7 +272,7 @@ export function HistorialFacturasModal({
                               {factura.numero}
                             </TableCell>
                             <TableCell>{factura.periodo ? factura.periodo.toUpperCase() : "-"}</TableCell>
-                            <TableCell>{factura.fecha}</TableCell>
+                            <TableCell>{factura.fecha ? new Date(factura.fecha).toLocaleDateString('es-CO') : '-'}</TableCell>
                             <TableCell>
                               {getEstadoBadge(factura.estadoPago)}
                             </TableCell>

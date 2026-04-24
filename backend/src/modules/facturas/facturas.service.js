@@ -136,7 +136,7 @@ class FacturasService {
       estadoPagoCliente = "pendiente";
       estadoFacturacion = "ROC";
     } else if (estadoPago === "ppc") {
-      estadoPagoCliente = "pendiente";
+      estadoPagoCliente = "ppc";
       estadoFacturacion = "PPC";
     } else if (estadoPago === "pendiente" || estadoPago === "vencido") {
       estadoPagoCliente = "pendiente";
