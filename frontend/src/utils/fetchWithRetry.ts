@@ -23,11 +23,6 @@ export const fetchWithRetry = async (
     if (!res.ok) throw new Error("Error en request");
     return res;
   } catch (err: any) {
-    // Solo reintentar si no es un 429 y quedan retries
-    if (err.message === "Rate limited (429)") {
-      throw err; // No reintentar en 429, esperar cooldown
-    }
-
     if (retries > 0) {
       // Exponential backoff: 2s, 4s, 8s
       const delay = (4 - retries) * 2000;

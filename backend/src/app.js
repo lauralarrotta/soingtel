@@ -21,8 +21,15 @@ const app = express();
 // ===========================================
 // SEGURIDAD
 // ===========================================
-app.use(cors(config.cors));
-app.options("*", cors(config.cors));
+const corsOptions = {
+  origin: ["https://soingtel.vercel.app", "http://localhost:3000", "http://localhost:5173"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(helmet());
 
 // Middleware
