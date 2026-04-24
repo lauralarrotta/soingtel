@@ -14,6 +14,12 @@ export const fetchWithRetry = async (
 
   try {
     const res = await fetch(url, { ...options, headers });
+    if (res.status === 401) {
+      localStorage.removeItem("token"); // Clear invalid token
+      // Dispatch a global event to trigger logout/redirect
+      window.dispatchEvent(new CustomEvent('auth-error', { detail: { status: 401, message: 'Unauthorized or session expired' } }));
+      throw new Error("Unauthorized (401)"); // Propagate error
+    }
     if (!res.ok) throw new Error("Error en request");
     return res;
   } catch (err: any) {

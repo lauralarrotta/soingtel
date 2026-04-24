@@ -10,6 +10,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Badge } from "./ui/badge";
 import { motion } from "framer-motion";
+import { fetchWithRetry } from "@/utils/fetchWithRetry";
 
 interface DashboardHeaderProps {
   userType: string;
@@ -75,14 +76,10 @@ export function DashboardHeader({
         }
 
         // Servidor
-        const token = localStorage.getItem("token");
-        const authHeaders: Record<string, string> = {};
-        if (token) authHeaders["Authorization"] = `Basic ${token}`;
-
         try {
           const [resSusp, resReac] = await Promise.all([
-            fetch(`${API_CONFIG.BASE_URL}/alertas_suspension`, { headers: authHeaders }),
-            fetch(`${API_CONFIG.BASE_URL}/alertas_reactivacion`, { headers: authHeaders }),
+            fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_suspension`),
+            fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_reactivacion`),
           ]);
 
           if (resSusp.ok) {

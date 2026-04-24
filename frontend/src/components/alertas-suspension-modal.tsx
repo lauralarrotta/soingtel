@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { API_CONFIG } from "@/config";
+import { fetchWithRetry } from "@/utils/fetchWithRetry";
 import {
   Dialog,
   DialogContent,
@@ -119,12 +121,32 @@ export function AlertasSuspensionModal({
     );
     setAlertas(alertasActualizadas);
     localStorage.setItem("alertas_suspension", JSON.stringify(alertasActualizadas));
+
+    // Notificar al servidor que la alerta fue vista
+    try {
+      await fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_suspension`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alertas_suspension: [{ id, vista: true }] }),
+      });
+    } catch (e) {
+      console.error("Error al marcar alerta como vista en servidor:", e);
+    }
   };
 
   const eliminarAlerta = async (id: string) => {
     const alertasActualizadas = alertas.filter((a) => a.id !== id);
     setAlertas(alertasActualizadas);
     localStorage.setItem("alertas_suspension", JSON.stringify(alertasActualizadas));
+
+    // Eliminar del servidor
+    try {
+      await fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_suspension/${id}`, {
+        method: "DELETE",
+      });
+    } catch (e) {
+      console.error("Error al eliminar alerta del servidor:", e);
+    }
   };
 
   const alertasNuevas = alertas.filter((a) => !a.vista);
@@ -144,6 +166,15 @@ export function AlertasSuspensionModal({
       const restantes = alertas.filter((a) => a.id !== alerta.id);
       setAlertas(restantes);
       localStorage.setItem("alertas_suspension", JSON.stringify(restantes));
+
+      // IMPORTANTE: Eliminar la alerta del servidor para que no vuelva a aparecer
+      try {
+        await fetchWithRetry(`${API_CONFIG.BASE_URL}/alertas_suspension/${alerta.id}`, {
+          method: "DELETE",
+        });
+      } catch (e) {
+        console.warn("No se pudo eliminar la alerta del servidor:", e);
+      }
 
       window.dispatchEvent(new CustomEvent('soingtel_reload_clientes'));
     } catch (e: any) {
