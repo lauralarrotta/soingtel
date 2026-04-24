@@ -103,6 +103,20 @@ export const clientesService = {
     return res.json();
   },
 
+  recalcularEstados: async () => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Basic ${token}`;
+
+    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/recalcular-estados`, {
+      method: "POST",
+      headers,
+    });
+
+    if (!res.ok) throw new Error("Error recalculando estados");
+    return res.json();
+  },
+
   actualizarObservacion: async (kit: string, observacion: string) => {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     const token = localStorage.getItem("token");

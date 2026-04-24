@@ -60,6 +60,9 @@ class FacturasService {
       estado_pago: estadoPago || "pendiente",
     });
 
+    // Actualizar estado del cliente según la última factura
+    await this._actualizarClientePorUltimaFactura(cliente.id);
+
     const clienteActualizado = await clientesRepository.findByKit(kit);
 
     return { factura, estado_facturacion: clienteActualizado?.estado_facturacion };
