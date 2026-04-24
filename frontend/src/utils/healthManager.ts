@@ -32,8 +32,9 @@ let currentHealthCheck: Promise<boolean> | null = null;
 export const healthManager = {
   // Obtener estado actual (sincrónico)
   isAvailable(): boolean {
+    // Si estamos en cooldown post-429 o error, no permitir requests
     if (Date.now() < globalHealthState.cooldownUntil) {
-      return globalHealthState.available;
+      return false;
     }
     if (Date.now() - globalHealthState.timestamp < HEALTH_CACHE_TTL) {
       return globalHealthState.available;

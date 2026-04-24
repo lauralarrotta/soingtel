@@ -1,5 +1,6 @@
 import { Cliente } from "@/types/cliente";
 import { API_CONFIG } from "@/config";
+import { fetchWithRetry } from "@/utils/fetchWithRetry";
 
 export const clientesService = {
   crear: async (cliente: Cliente) => {
@@ -51,7 +52,7 @@ export const clientesService = {
     const token = localStorage.getItem("token");
     if (token) headers["Authorization"] = `Basic ${token}`;
 
-    const res = await fetch(`${API_CONFIG.BASE_URL}/clientes/estadisticas`, {
+    const res = await fetchWithRetry(`${API_CONFIG.BASE_URL}/clientes/estadisticas`, {
       headers,
     });
     if (!res.ok) throw new Error("Error cargando estadísticas");

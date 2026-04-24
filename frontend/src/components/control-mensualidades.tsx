@@ -63,6 +63,7 @@ import { clientesService } from "@/services/clientesService";
 import { alertasService } from "@/services/alertasService";
 import { useMemo } from "react";
 import { facturasService } from "@/services/facturasService";
+import { healthManager } from "@/utils/healthManager";
 
 
 
@@ -119,11 +120,15 @@ const crearCliente = async (cliente: Cliente) => {
 };
 
  const cargarEstadisticas = async () => {
-  try {
-    const data = await clientesService.estadisticas();
-    setEstadisticas(data);
-  } catch {}
-};
+    try {
+      // Skip if server is known to be unavailable or in cooldown
+      if (!healthManager.isAvailable()) {
+        return;
+      }
+      const data = await clientesService.estadisticas();
+      setEstadisticas(data);
+    } catch {}
+  };
   const {
     data: clientes,
     setData: setClientes,
