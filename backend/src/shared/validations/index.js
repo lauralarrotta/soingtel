@@ -14,7 +14,7 @@ function validarCrearCliente(data) {
   }
 
   if (data.kit) {
-    const kitRegex = /^KIT-?\d+$/;
+    const kitRegex = /^KIT-?[A-Za-z0-9]+$/;
     if (!kitRegex.test(data.kit)) {
       errores.push("El kit debe tener formato KIT-números o KITnúmeros (ejemplo: KIT-12345 o KIT12345)");
     }
@@ -146,7 +146,7 @@ function validarActualizarCliente(data) {
  */
 function validarFormatoKit(kit) {
   if (!kit) return;
-  const kitRegex = /^KIT-?\d+$/;
+  const kitRegex = /^KIT-?[A-Za-z0-9]+$/;
   if (!kitRegex.test(kit)) {
     throw new AppError("El kit debe tener formato KIT-números o KITnúmeros (ejemplo: KIT-12345 o KIT12345)", 400);
   }
