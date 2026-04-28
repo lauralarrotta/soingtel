@@ -222,13 +222,14 @@ class ClientesRepository {
 
     // Estadísticas basadas en facturas del periodo
     const [totalFacturados, pagados, pendientes, vencidos, ppc, roc, suspendido, enMoraPeriodo, pendientesFacturar] = await Promise.all([
-      // Total clientes con factura en ese periodo
+      // Total clientes con estado_facturacion='facturado' (no depende de si tiene factura en el periodo)
       pool.query(`
-        SELECT COUNT(DISTINCT f.cliente_id) as count
-        FROM ${table.factura} f
-        JOIN ${table.cliente} c ON c.id = f.cliente_id
-        WHERE c.activo = true AND ${facturaWhere}
-      `, facturaParams),
+        SELECT COUNT(DISTINCT c.id) as count
+        FROM ${table.cliente} c
+        WHERE c.activo = true
+        AND c.estado_facturacion = 'facturado'
+        AND c.estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida')
+      `),
       // Con factura PAGADA en ese periodo
       pool.query(`
         SELECT COUNT(DISTINCT f.cliente_id) as count
@@ -264,18 +265,22 @@ class ClientesRepository {
         JOIN ${table.cliente} c ON c.id = f.cliente_id
         WHERE c.activo = true AND f.estado_pago = 'roc' AND ${facturaWhere}
       `, facturaParams),
-      // Clientes SUSPENDIDOS (estado_pago del cliente, no tienen factura en el periodo)
+      // Clientes SUSPENDIDOS (estado_pago del cliente)
       pool.query(`
         SELECT COUNT(DISTINCT c.id) as count
         FROM ${table.cliente} c
         WHERE c.activo = true AND c.estado_pago = 'suspendido'
       `),
-      // Clientes en MORA en ese periodo (tienen factura vencida en el periodo)
+      // Clientes en MORA en ese periodo (2+ facturas pendientes/vencidas del periodo)
       pool.query(`
         SELECT COUNT(DISTINCT f.cliente_id) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
-        WHERE c.activo = true AND f.estado_pago = 'vencido' AND ${facturaWhere}
+        WHERE c.activo = true
+        AND f.estado_pago IN ('pendiente', 'vencido')
+        AND f.periodo = $1 AND f.anio = $2
+        GROUP BY f.cliente_id
+        HAVING COUNT(*) >= 2
       `, facturaParams),
       // Clientes SIN factura en ese periodo pero con estado_facturacion='facturado'
       pool.query(`

@@ -120,6 +120,16 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       valueClass: "text-slate-400",
     },
     {
+      title: "En Mora",
+      value: stats.enMora,
+      icon: AlertTriangle,
+      color: "rose",
+      description: "2+ facturas vencidas/pendientes del periodo",
+      bgClass: "border-rose-500/20",
+      iconClass: "text-rose-500",
+      valueClass: "text-rose-400",
+    },
+    {
       title: "Suspendidos",
       value: stats.suspendido,
       icon: Ban,
