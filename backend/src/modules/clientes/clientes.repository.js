@@ -184,7 +184,8 @@ class ClientesRepository {
 
   async getEstadisticas(table = TABLAS.PRINCIPAL) {
     const [total, ppc, danadas, susp, gar, trans] = await Promise.all([
-      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago NOT IN ('en_dano', 'garantia', 'suspendido', 'ppc', 'transferida') AND estado_facturacion != 'PPC'`),
+      // Total activos = todos menos en_dano, transferencia, garantia
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago NOT IN ('en_dano', 'transferida', 'garantia')`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND (estado_facturacion = 'PPC' OR estado_pago = 'ppc')`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'en_dano'`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'suspendido'`),
@@ -221,45 +222,45 @@ class ClientesRepository {
     const facturaParams = [periodo, anio];
 
     // Estadísticas basadas en facturas del periodo
-    const [totalFacturados, pagados, pendientes, vencidos, ppc, roc, suspendido, enMoraPeriodo, pendientesFacturar] = await Promise.all([
-      // Total clientes CON factura en ese periodo (sin importar estado_pago de la factura)
+    const [facturados, pagadas, pendientes, vencidas, ppc, roc, suspendido, enMoraPeriodo, pendientesFacturar] = await Promise.all([
+      // Total facturas en ese periodo
       pool.query(`
-        SELECT COUNT(DISTINCT f.cliente_id) as count
+        SELECT COUNT(*) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
         WHERE c.activo = true AND ${facturaWhere}
       `, facturaParams),
-      // Con factura PAGADA en ese periodo
+      // Facturas PAGADAS en ese periodo
       pool.query(`
-        SELECT COUNT(DISTINCT f.cliente_id) as count
+        SELECT COUNT(*) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
         WHERE c.activo = true AND f.estado_pago = 'pagado' AND ${facturaWhere}
       `, facturaParams),
-      // Con factura PENDIENTE en ese periodo
+      // Facturas PENDIENTES en ese periodo
       pool.query(`
-        SELECT COUNT(DISTINCT f.cliente_id) as count
+        SELECT COUNT(*) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
         WHERE c.activo = true AND f.estado_pago = 'pendiente' AND ${facturaWhere}
       `, facturaParams),
-      // Con factura VENCIDA en ese periodo
+      // Facturas VENCIDAS en ese periodo
       pool.query(`
-        SELECT COUNT(DISTINCT f.cliente_id) as count
+        SELECT COUNT(*) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
         WHERE c.activo = true AND f.estado_pago = 'vencido' AND ${facturaWhere}
       `, facturaParams),
-      // Con factura PPC en ese periodo
+      // Facturas PPC en ese periodo
       pool.query(`
-        SELECT COUNT(DISTINCT f.cliente_id) as count
+        SELECT COUNT(*) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
         WHERE c.activo = true AND f.estado_pago = 'ppc' AND ${facturaWhere}
       `, facturaParams),
-      // Con factura ROC en ese periodo
+      // Facturas ROC en ese periodo
       pool.query(`
-        SELECT COUNT(DISTINCT f.cliente_id) as count
+        SELECT COUNT(*) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
         WHERE c.activo = true AND f.estado_pago = 'roc' AND ${facturaWhere}
@@ -297,16 +298,19 @@ class ClientesRepository {
       `, facturaParams),
     ]);
 
+    const hayFacturasEnPeriodo = parseInt(facturados.rows[0].count) > 0;
+
     return {
-      facturado: parseInt(totalFacturados.rows[0].count),
-      pagados: parseInt(pagados.rows[0].count),
+      facturado: hayFacturasEnPeriodo ? parseInt(facturados.rows[0].count) : parseInt(pendientesFacturar.rows[0].count),
+      pagados: parseInt(pagadas.rows[0].count),
       pendientes: parseInt(pendientes.rows[0].count),
-      vencidos: parseInt(vencidos.rows[0].count),
+      vencidos: parseInt(vencidas.rows[0].count),
       ppc: parseInt(ppc.rows[0].count),
       roc: parseInt(roc.rows[0].count),
       suspendido: parseInt(suspendido.rows[0].count),
       enMora: parseInt(enMoraPeriodo.rows[0].count),
       pendientesFacturar: parseInt(pendientesFacturar.rows[0].count),
+      sinFacturas: !hayFacturasEnPeriodo,
     };
   }
 

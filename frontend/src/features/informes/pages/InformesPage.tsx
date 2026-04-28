@@ -31,6 +31,11 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
   const [anio, setAnio] = useState(new Date().getFullYear().toString());
   const [hasSearched, setHasSearched] = useState(false);
 
+  const displayValue = (value: number, sinFacturas?: boolean) => {
+    if (sinFacturas) return "Sin facturas";
+    return value;
+  };
+
   const buscarInformes = async () => {
     setLoading(true);
     setHasSearched(true);
@@ -200,6 +205,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
         <div className="grid grid-cols-2 xl:grid-cols-3 gap-6">
           {statCards.map((card) => {
             const Icon = card.icon;
+            const displayVal = card.title === "Facturados" ? displayValue(card.value, stats.sinFacturas) : card.value;
             return (
               <Card
                 key={card.title}
@@ -213,7 +219,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
                 </CardHeader>
                 <CardContent>
                   <div className={`text-5xl font-bold ${card.valueClass} mb-2`}>
-                    {card.value}
+                    {displayVal}
                   </div>
                   <p className="text-sm text-slate-400">
                     {card.description}
@@ -239,7 +245,9 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <p className="text-sm text-slate-400">Total Facturados</p>
-                  <p className="text-2xl font-bold text-cyan-400">{stats.facturado}</p>
+                  <p className="text-2xl font-bold text-cyan-400">
+                    {stats.sinFacturas ? "Sin facturas" : stats.facturado}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">Sin Facturar</p>

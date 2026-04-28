@@ -11,6 +11,7 @@ export interface InformesStats {
   suspendido: number;
   enMora: number;
   pendientesFacturar: number;
+  sinFacturas?: boolean;
 }
 
 export const informesService = {
