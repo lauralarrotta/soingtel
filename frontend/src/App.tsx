@@ -10,6 +10,7 @@ import { AlertasFacturacionModal } from "./components/alertas-facturacion-modal"
 import { AlertasSuspensionModal } from "./components/alertas-suspension-modal";
 import { AlertasReactivacionModal } from "./components/alertas-reactivacion-modal";
 import { PlaceholderSection } from "./components/placeholder-section";
+import { InformesPage } from "./features/informes/pages/InformesPage";
 import { Users, Activity, FileText, Settings } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
@@ -285,11 +286,15 @@ export default function App() {
           element={
             <ProtectedRoute userType={userType}>
               <DashboardLayout {...dashboardProps}>
-                <PlaceholderSection
-                  title="Reportes"
-                  description="Generación de reportes detallados de facturación y pagos."
-                  icon={<FileText className="h-16 w-16" />}
-                />
+                {userType === "admin" ? (
+                  <InformesPage userType={userType} />
+                ) : (
+                  <PlaceholderSection
+                    title="Acceso Restringido"
+                    description="Solo los administradores pueden ver esta sección."
+                    icon={<FileText className="h-16 w-16" />}
+                  />
+                )}
               </DashboardLayout>
             </ProtectedRoute>
           }

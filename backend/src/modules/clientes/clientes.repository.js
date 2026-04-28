@@ -202,6 +202,36 @@ class ClientesRepository {
     };
   }
 
+  async getEstadisticasInformes(table = TABLAS.PRINCIPAL, { mes, anio } = {}) {
+    const [pendientesFacturar, enMora, rocResult] = await Promise.all([
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_facturacion = 'facturado' AND estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida')`),
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} c WHERE activo = true AND estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida') AND (SELECT COUNT(*) FROM ${table.factura} f WHERE f.cliente_id = c.id AND f.estado_pago IN ('pendiente', 'vencido')) >= 2`),
+      this.getROCCountByPeriod(table, mes, anio),
+    ]);
+
+    return {
+      pendientesFacturar: parseInt(pendientesFacturar.rows[0].count),
+      enMora: parseInt(enMora.rows[0].count),
+      rocPorPeriodo: parseInt(rocResult.rows[0].count),
+    };
+  }
+
+  async getROCCountByPeriod(table, mes, anio) {
+    let query = `SELECT COUNT(DISTINCT c.id) FROM ${table.cliente} c JOIN ${table.factura} f ON f.cliente_id = c.id WHERE c.activo = true AND f.estado_pago = 'roc'`;
+    const params = [];
+
+    if (mes) {
+      params.push(mes);
+      query += ` AND f.periodo = $${params.length}`;
+    }
+    if (anio) {
+      params.push(anio);
+      query += ` AND f.anio = $${params.length}`;
+    }
+
+    return pool.query(query, params);
+  }
+
   async findAllForExport(table = TABLAS.PRINCIPAL) {
     const result = await pool.query(`
       SELECT c.*, COALESCE(

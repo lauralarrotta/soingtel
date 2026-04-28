@@ -10,6 +10,7 @@ router.use((req, res, next) => {
 
 // Rutas principales (sede principal)
 router.get("/clientes/estadisticas", controller.estadisticas);
+router.get("/clientes/estadisticas-informes", controller.estadisticasInformes);
 router.post("/clientes/recalcular-estados", controller.recalcularEstados);
 router.get("/clientes", controller.listar);
 router.get("/clientes/:kit", controller.obtenerPorKit);
@@ -23,6 +24,7 @@ router.post("/clientes/importar", controller.importar);
 
 // Rutas Fusagasuga
 router.get("/clientes_fusagasuga/estadisticas", controller.estadisticas);
+router.get("/clientes_fusagasuga/estadisticas-informes", controller.estadisticasInformes);
 router.post("/clientes_fusagasuga/recalcular-estados", controller.recalcularEstados);
 router.get("/clientes_fusagasuga", controller.listar);
 router.get("/clientes_fusagasuga/:kit", controller.obtenerPorKit);
