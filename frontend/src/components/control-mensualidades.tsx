@@ -148,7 +148,7 @@ const crearCliente = async (cliente: Cliente) => {
     10,
     {
       search: searchTerm,
-      estado: activeCardFilter === "danadas" ? "en_dano" : activeCardFilter === "suspendidas" ? "suspendido" : activeCardFilter === "garantias" ? "garantia" : filterEstado,
+      estado: activeCardFilter === "danadas" ? "en_dano" : activeCardFilter === "suspendidas" ? "suspendido" : activeCardFilter === "garantias" ? "garantia" : activeCardFilter === "transferidas" ? "transferida" : filterEstado,
       corte: filterCorte,
       estado_facturacion: activeCardFilter === "ppc" ? "PPC" : undefined,
       exclude_ppc: activeCardFilter !== "ppc" ? "true" : undefined,

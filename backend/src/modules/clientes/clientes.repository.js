@@ -184,7 +184,7 @@ class ClientesRepository {
 
   async getEstadisticas(table = TABLAS.PRINCIPAL) {
     const [total, ppc, danadas, susp, gar, trans] = await Promise.all([
-      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago NOT IN ('en_dano', 'garantia', 'suspendido', 'ppc', 'transferida')`),
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago NOT IN ('en_dano', 'garantia', 'suspendido', 'ppc', 'transferida') AND estado_facturacion != 'PPC'`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND (estado_facturacion = 'PPC' OR estado_pago = 'ppc')`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'en_dano'`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'suspendido'`),
