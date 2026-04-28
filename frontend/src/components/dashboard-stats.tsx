@@ -29,123 +29,35 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({ clientes }: DashboardStatsProps) {
-  // Estadísticas generales
   const totalClientes = clientes.length;
-  const clientesConfirmados = clientes.filter(
-    (c) => c.estado_pago === "confirmado",
-  ).length;
-  const clientesPendientes = clientes.filter(
-    (c) => c.estado_pago === "pendiente",
-  ).length;
-  const clientesSuspendidos = clientes.filter(
-    (c) => c.estado_pago === "suspendido",
-  ).length;
+  const clientesConfirmados = clientes.filter((c) => c.estado_pago === "confirmado").length;
+  const clientesSuspendidos = clientes.filter((c) => c.estado_pago === "suspendido").length;
 
-  // Cálculos financieros
-  const ingresosMensualesEsperados = clientes.reduce(
-    (acc, c) => acc + parseFloat(c.costo || "0"),
-    0,
-  );
-  const ingresosConfirmados = clientes
-    .filter((c) => c.estado_pago === "confirmado")
-    .reduce((acc, c) => acc + parseFloat(c.costo || "0"), 0);
-  const ingresosPendientes = clientes
-    .filter((c) => c.estado_pago === "pendiente")
-    .reduce((acc, c) => acc + parseFloat(c.costo || "0"), 0);
-  const ingresosSuspendidos = clientes
-    .filter((c) => c.estado_pago === "suspendido")
-    .reduce((acc, c) => acc + parseFloat(c.costo || "0"), 0);
+  const totalFacturas = clientes.reduce((acc, c) => acc + (c.facturas?.length || 0), 0);
 
-  // Tasas y porcentajes
-  const tasaConfirmacion =
-    totalClientes > 0
-      ? ((clientesConfirmados / totalClientes) * 100).toFixed(1)
-      : "0";
-  const tasaSuspension =
-    totalClientes > 0
-      ? ((clientesSuspendidos / totalClientes) * 100).toFixed(1)
-      : "0";
-
-  // Facturas totales
-  const totalFacturas = clientes.reduce(
-    (acc, c) => acc + (c.facturas?.length || 0),
-    0,
-  );
   const facturasPagadas = clientes.reduce((acc, c) => {
-    return (
-      acc + (c.facturas?.filter((f) => f.estadoPago === "pagado").length || 0)
-    );
-  }, 0);
-  const facturasPendientes = clientes.reduce((acc, c) => {
-    return (
-      acc +
-      (c.facturas?.filter((f) => f.estadoPago === "pendiente").length || 0)
-    );
+    return acc + (c.facturas?.filter((f) => f.estadoPago === "pagado").length || 0);
   }, 0);
 
-  // Clientes en mora (2+ facturas vencidas)
+  const facturasPendientes = clientes.reduce((acc, c) => {
+    return acc + (c.facturas?.filter((f) => f.estadoPago === "pendiente").length || 0);
+  }, 0);
+
   const clientesEnMora = clientes.filter((c) => {
     const vencidas = c.facturas?.filter((f) => f.estadoPago === "vencido").length || 0;
     return vencidas >= 2;
   }).length;
 
-  // Clientes en mora (exactamente 2 facturas vencidas)
-  const clientesEnMora = clientes.filter((c) => {
-    const vencidas =
-      c.facturas?.filter((f) => f.estadoPago === "vencido").length || 0;
-    return vencidas === 2 && c.estado_pago !== "suspendido";
-  }).length;
-
-  // Clientes con más de 2 facturas vencidas
-  const clientesMasDe2Vencidas = clientes.filter((c) => {
-    const vencidas =
-      c.facturas?.filter((f) => f.estadoPago === "vencido").length || 0;
-    return vencidas > 2;
-  }).length;
-
-  // Eficiencia de cobro
-  const tasaCobro =
-    totalFacturas > 0
-      ? ((facturasPagadas / totalFacturas) * 100).toFixed(1)
-      : "0";
-  const tasaMorosidad =
-    totalFacturas > 0
-      ? ((facturasVencidas / totalFacturas) * 100).toFixed(1)
-      : "0";
-
-  // Ingresos por facturas
-  const montoTotalFacturas = clientes.reduce((acc, c) => {
-    return (
-      acc +
-      (c.facturas?.reduce((sum, f) => sum + parseFloat(f.monto || "0"), 0) || 0)
-    );
-  }, 0);
   const montoFacturasPagadas = clientes.reduce((acc, c) => {
-    return (
-      acc +
-      (c.facturas
-        ?.filter((f) => f.estadoPago === "pagado")
-        .reduce((sum, f) => sum + parseFloat(f.monto || "0"), 0) || 0)
-    );
-  }, 0);
-  const montoFacturasVencidas = clientes.reduce((acc, c) => {
-    return (
-      acc +
-      (c.facturas
-        ?.filter((f) => f.estadoPago === "vencido")
-        .reduce((sum, f) => sum + parseFloat(f.monto || "0"), 0) || 0)
-    );
+    return acc + (c.facturas?.filter((f) => f.estadoPago === "pagado").reduce((sum, f) => sum + parseFloat(f.monto || "0"), 0) || 0);
   }, 0);
 
-  // Promedio de facturas por cliente
-  const promedioFacturasPorCliente =
-    totalClientes > 0 ? (totalFacturas / totalClientes).toFixed(1) : "0";
+  const promedioFacturasPorCliente = totalClientes > 0 ? (totalFacturas / totalClientes).toFixed(1) : "0";
 
   return (
     <div className="space-y-6">
-      {/* Análisis de Facturación */}
       <div>
-        <h3 className="text-base font-medium mb-3 text-slate-400">Análisis de Facturación</h3>
+        <h3 className="text-base font-medium mb-3 text-slate-400">Analisis de Facturacion</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <Card className="relative overflow-hidden bg-[#0A1628]/80 border-slate-500/20 backdrop-blur">
             <div className="absolute inset-0 bg-gradient-to-br from-slate-500/5 to-transparent" />
