@@ -17,6 +17,7 @@ import {
   PauseCircle,
   Wrench,
   ShieldCheck,
+  ArrowRightLeft,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -104,7 +105,8 @@ export function FusagasugaMensualidades({
     ppc: 0,
     danadas: 0,
     suspendidas: 0,
-    garantias: 0
+    garantias: 0,
+    transferidas: 0,
   });
 
   const cargarEstadisticas = async () => {
@@ -136,7 +138,7 @@ export function FusagasugaMensualidades({
     10,
     {
       search: searchTerm,
-      estado: activeCardFilter === "danadas" ? "en_dano" : activeCardFilter === "suspendidas" ? "suspendido" : activeCardFilter === "garantias" ? "garantia" : filterEstado,
+      estado: activeCardFilter === "danadas" ? "en_dano" : activeCardFilter === "suspendidas" ? "suspendido" : activeCardFilter === "garantias" ? "garantia" : activeCardFilter === "transferidas" ? "transferida" : filterEstado,
       corte: filterCorte,
       estado_facturacion: activeCardFilter === "ppc" ? "PPC" : undefined,
       exclude_ppc: activeCardFilter !== "ppc" ? "true" : undefined,
@@ -762,7 +764,7 @@ export function FusagasugaMensualidades({
       />
 
       {/* Tarjetas Principales de Control */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
         <Card
           onClick={() => setActiveCardFilter("todos")}
           className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "todos" ? "ring-2 ring-cyan-500" : "hover:shadow-md"}`}
@@ -800,11 +802,11 @@ export function FusagasugaMensualidades({
           <div className="h-1 bg-gradient-to-r from-slate-500 to-slate-400" />
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
-              <Wrench className="h-5 w-5 text-orange-500" />
-              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-600 border-orange-200">Daño</Badge>
+              <Wrench className="h-5 w-5 text-slate-500" />
+              <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-600 border-slate-200">Daño</Badge>
             </div>
-            <div className="text-3xl font-bold text-orange-600">{estadisticas.danadas}</div>
-            <p className="text-xs text-muted-foreground mt-1">Kits en Daño</p>
+            <div className="text-3xl font-bold text-slate-600">{estadisticas.danadas}</div>
+            <p className="text-xs text-muted-foreground mt-1">Kits Dañados</p>
           </CardContent>
         </Card>
 
@@ -819,7 +821,22 @@ export function FusagasugaMensualidades({
               <Badge variant="outline" className="text-[10px] bg-cyan-50 text-cyan-600 border-cyan-200">Garantía</Badge>
             </div>
             <div className="text-3xl font-bold text-cyan-600">{estadisticas.garantias}</div>
-            <p className="text-xs text-muted-foreground mt-1">Kits en Garantía</p>
+            <p className="text-xs text-muted-foreground mt-1">En Garantía</p>
+          </CardContent>
+        </Card>
+
+        <Card
+          onClick={() => setActiveCardFilter("transferidas")}
+          className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "transferidas" ? "ring-2 ring-purple-500" : "hover:shadow-md"}`}
+        >
+          <div className="h-1 bg-gradient-to-r from-purple-500 to-purple-400" />
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <ArrowRightLeft className="h-5 w-5 text-purple-500" />
+              <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-600 border-purple-200">Trans.</Badge>
+            </div>
+            <div className="text-3xl font-bold text-purple-600">{estadisticas.transferidas}</div>
+            <p className="text-xs text-muted-foreground mt-1">Transferidas</p>
           </CardContent>
         </Card>
       </div>
@@ -835,8 +852,8 @@ export function FusagasugaMensualidades({
                     ? "Kits en Daño"
                     : activeCardFilter === "garantias"
                       ? "Kits en Garantía"
-                      : activeCardFilter === "suspendidas"
-                        ? "Clientes Suspendidos"
+                      : activeCardFilter === "transferidas"
+                        ? "Kits Transferidos"
                         : "Control de Mensualidades"}
               </h2>
               {loadingClientes && (
@@ -964,6 +981,7 @@ export function FusagasugaMensualidades({
                   <SelectItem value="suspendido">Suspendido</SelectItem>
                   <SelectItem value="en_dano">En Daño</SelectItem>
                   <SelectItem value="garantia">En Garantía</SelectItem>
+                  <SelectItem value="transferida">Transferida</SelectItem>
                   <SelectItem value="sin_factura">Sin Facturas</SelectItem>
                 </SelectContent>
               </Select>
@@ -1044,6 +1062,9 @@ export function FusagasugaMensualidades({
                   .filter((cliente) => {
                     if (filterEstado === "sin_factura") {
                       return !cliente.facturas || cliente.facturas.length === 0;
+                    }
+                    if (filterEstado === "transferida") {
+                      return cliente.estado_pago === "transferida";
                     }
                     const estadoCliente = calcularEstadoCliente(cliente);
                     return filterEstado === "todos" || estadoCliente === filterEstado;

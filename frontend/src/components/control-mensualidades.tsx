@@ -18,7 +18,7 @@ import {
   Wrench,
   ShieldCheck,
   Users,
-  Calculator,
+  ArrowRightLeft,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -109,7 +109,8 @@ export function ControlMensualidades({
     ppc: 0,
     danadas: 0,
     suspendidas: 0,
-    garantias: 0
+    garantias: 0,
+    transferidas: 0,
   });
 
 
@@ -656,6 +657,10 @@ const handleSaveClienteCompleto = async (
       return !cliente.facturas || cliente.facturas.length === 0;
     }
 
+    if (filterEstado === "transferidas") {
+      return cliente.estado_pago === "transferida";
+    }
+
     return filterEstado === "todos" || estadoCliente === filterEstado;
   });
 }, [clientes, filterEstado, showOnlyMora]);
@@ -680,7 +685,7 @@ const handleSaveClienteCompleto = async (
       />
 
       {/* Tarjetas Principales de Control */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
         <Card
           onClick={() => setActiveCardFilter("todos")}
           className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "todos" ? "ring-2 ring-blue-500" : "hover:shadow-md"}`}
@@ -718,11 +723,11 @@ const handleSaveClienteCompleto = async (
           <div className="h-1 bg-gradient-to-r from-slate-500 to-slate-400" />
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-2">
-              <Wrench className="h-5 w-5 text-orange-500" />
-              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-600 border-orange-200">Daño</Badge>
+              <Wrench className="h-5 w-5 text-slate-500" />
+              <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-600 border-slate-200">Daño</Badge>
             </div>
-            <div className="text-3xl font-bold text-orange-600">{estadisticas.danadas}</div>
-            <p className="text-xs text-muted-foreground mt-1">Kits en Daño</p>
+            <div className="text-3xl font-bold text-slate-600">{estadisticas.danadas}</div>
+            <p className="text-xs text-muted-foreground mt-1">Kits Dañados</p>
           </CardContent>
         </Card>
 
@@ -737,7 +742,22 @@ const handleSaveClienteCompleto = async (
               <Badge variant="outline" className="text-[10px] bg-cyan-50 text-cyan-600 border-cyan-200">Garantía</Badge>
             </div>
             <div className="text-3xl font-bold text-cyan-600">{estadisticas.garantias}</div>
-            <p className="text-xs text-muted-foreground mt-1">Kits en Garantía</p>
+            <p className="text-xs text-muted-foreground mt-1">En Garantía</p>
+          </CardContent>
+        </Card>
+
+        <Card
+          onClick={() => setActiveCardFilter("transferidas")}
+          className={`cursor-pointer transition-all h-full overflow-hidden ${activeCardFilter === "transferidas" ? "ring-2 ring-purple-500" : "hover:shadow-md"}`}
+        >
+          <div className="h-1 bg-gradient-to-r from-purple-500 to-purple-400" />
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <ArrowRightLeft className="h-5 w-5 text-purple-500" />
+              <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-600 border-purple-200">Trans.</Badge>
+            </div>
+            <div className="text-3xl font-bold text-purple-600">{estadisticas.transferidas}</div>
+            <p className="text-xs text-muted-foreground mt-1">Transferidas</p>
           </CardContent>
         </Card>
       </div>
@@ -753,8 +773,8 @@ const handleSaveClienteCompleto = async (
                     ? "Kits en Daño"
                     : activeCardFilter === "garantias"
                       ? "Kits en Garantía"
-                      : activeCardFilter === "suspendidas"
-                        ? "Clientes Suspendidos"
+                      : activeCardFilter === "transferidas"
+                        ? "Kits Transferidos"
                         : "Control de Mensualidades"}
               </h2>
               {loadingClientes && (
@@ -822,16 +842,6 @@ const handleSaveClienteCompleto = async (
                 <Download className="h-4 w-4 mr-2" />
                 Exportar Clientes
               </Button>
-              {(userType === "admin" || userType === "facturacion") && (
-                <Button
-                  variant="outline"
-                  onClick={recalcularEstadosClientes}
-                  title="Recalcula el estado de cada cliente según su última factura"
-                >
-                  <Calculator className="h-4 w-4 mr-2" />
-                  Recalcular Estados
-                </Button>
-              )}
             </div>
           </div>
 
@@ -892,6 +902,7 @@ const handleSaveClienteCompleto = async (
                   <SelectItem value="suspendido">Suspendido</SelectItem>
                   <SelectItem value="en_dano">En Daño</SelectItem>
                   <SelectItem value="garantia">En Garantía</SelectItem>
+                  <SelectItem value="transferida">Transferida</SelectItem>
                   <SelectItem value="sin_factura">Sin Facturas</SelectItem>
                 </SelectContent>
               </Select>

@@ -183,12 +183,13 @@ class ClientesRepository {
   }
 
   async getEstadisticas(table = TABLAS.PRINCIPAL) {
-    const [total, ppc, danadas, susp, gar] = await Promise.all([
-      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND (estado_pago IS NULL OR estado_pago NOT IN ('en_dano', 'garantia'))`),
+    const [total, ppc, danadas, susp, gar, trans] = await Promise.all([
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago NOT IN ('en_dano', 'garantia', 'suspendido', 'ppc', 'transferida')`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND (estado_facturacion = 'PPC' OR estado_pago = 'ppc')`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'en_dano'`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'suspendido'`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'garantia'`),
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'transferida'`),
     ]);
 
     return {
@@ -197,6 +198,7 @@ class ClientesRepository {
       danadas: parseInt(danadas.rows[0].count),
       suspendidas: parseInt(susp.rows[0].count),
       garantias: parseInt(gar.rows[0].count),
+      transferidas: parseInt(trans.rows[0].count),
     };
   }
 
