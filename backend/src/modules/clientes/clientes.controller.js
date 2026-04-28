@@ -94,8 +94,8 @@ class ClientesController {
 
   async estadisticasInformes(req, res, next) {
     try {
-      const { mes, anio } = req.query;
-      const stats = await clientesService.obtenerEstadisticasInformes(req.sede, { mes, anio });
+      const { periodo, anio } = req.query;
+      const stats = await clientesService.obtenerEstadisticasInformes(req.sede, { periodo, anio });
       res.json(stats);
     } catch (error) {
       next(error);

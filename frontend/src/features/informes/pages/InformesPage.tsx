@@ -1,35 +1,41 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InformesStatsCards } from "../components/InformesStatsCards";
-import { ROCFiltroPeriodo } from "../components/ROCFiltroPeriodo";
+import { PeriodoFiltro } from "../components/ROCFiltroPeriodo";
 import { informesService, InformesStats } from "@/services/informesService";
-import { RefreshCw, FileText, CheckCircle, Clock, Ban, AlertTriangle } from "lucide-react";
+import { RefreshCw, FileText, CheckCircle, Clock, Ban, AlertTriangle, DollarSign } from "lucide-react";
 
 interface InformesPageProps {
   userType?: string;
 }
 
+const PERIODOS_DISPLAY: Record<string, string> = {
+  "ene-feb": "Ene - Feb",
+  "feb-mar": "Feb - Mar",
+  "mar-abr": "Mar - Abr",
+  "abr-may": "Abr - May",
+  "may-jun": "May - Jun",
+  "jun-jul": "Jun - Jul",
+  "jul-ago": "Jul - Ago",
+  "ago-sep": "Ago - Sep",
+  "sep-oct": "Sep - Oct",
+  "oct-nov": "Oct - Nov",
+  "nov-dic": "Nov - Dic",
+  "dic-ene": "Dic - Ene",
+};
+
 export function InformesPage({ userType = "admin" }: InformesPageProps) {
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState<InformesStats>({
-    total: 0,
-    ppc: 0,
-    danadas: 0,
-    suspendidas: 0,
-    garantias: 0,
-    transferidas: 0,
-    pendientesFacturar: 0,
-    enMora: 0,
-    rocPorPeriodo: 0,
-  });
-  const [rocMes, setRocMes] = useState((new Date().getMonth() + 1).toString());
-  const [rocAnio, setRocAnio] = useState(new Date().getFullYear().toString());
+  const [stats, setStats] = useState<InformesStats | null>(null);
+  const [periodo, setPeriodo] = useState("ene-feb");
+  const [anio, setAnio] = useState(new Date().getFullYear().toString());
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const cargarEstadisticas = async () => {
+  const buscarInformes = async () => {
     setLoading(true);
+    setHasSearched(true);
     try {
-      const data = await informesService.obtenerEstadisticas();
+      const data = await informesService.obtenerEstadisticas(periodo, anio);
       setStats(data);
     } catch (error) {
       console.error("Error cargando informes:", error);
@@ -38,38 +44,82 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
     }
   };
 
-  const buscarROCPorPeriodo = async () => {
-    setLoading(true);
-    try {
-      const data = await informesService.obtenerEstadisticas(rocMes, rocAnio);
-      setStats((prev) => ({ ...prev, rocPorPeriodo: data.rocPorPeriodo }));
-    } catch (error) {
-      console.error("Error buscando ROC:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    cargarEstadisticas();
+    buscarInformes();
   }, []);
 
-  const getMesNombre = (mes: string | number) => {
-    const meses = [
-      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-    ];
-    const m = typeof mes === 'string' ? parseInt(mes) : mes;
-    return meses[m - 1] || "";
-  };
+  const statCards = stats ? [
+    {
+      title: "Facturados",
+      value: stats.facturado,
+      icon: CheckCircle,
+      color: "green",
+      description: "Clientes que pagaron en el periodo",
+      bgClass: "border-green-500/20",
+      iconClass: "text-green-500",
+      valueClass: "text-green-400",
+    },
+    {
+      title: "PPC",
+      value: stats.ppc,
+      icon: Clock,
+      color: "orange",
+      description: "Clientes en pausa por pago",
+      bgClass: "border-orange-500/20",
+      iconClass: "text-orange-500",
+      valueClass: "text-orange-400",
+    },
+    {
+      title: "Pendientes",
+      value: stats.pendiente,
+      icon: FileText,
+      color: "yellow",
+      description: "Facturas pendientes de pago",
+      bgClass: "border-yellow-500/20",
+      iconClass: "text-yellow-500",
+      valueClass: "text-yellow-400",
+    },
+    {
+      title: "ROC",
+      value: stats.roc,
+      icon: AlertTriangle,
+      color: "purple",
+      description: "Clientes con reclamación",
+      bgClass: "border-purple-500/20",
+      iconClass: "text-purple-500",
+      valueClass: "text-purple-400",
+    },
+    {
+      title: "Suspendidos",
+      value: stats.suspendido,
+      icon: Ban,
+      color: "red",
+      description: "Clientes suspendidos",
+      bgClass: "border-red-500/20",
+      iconClass: "text-red-500",
+      valueClass: "text-red-400",
+    },
+    {
+      title: "En Mora",
+      value: stats.enMora,
+      icon: AlertTriangle,
+      color: "rose",
+      description: "Clientes con 2+ facturas vencidas",
+      bgClass: "border-rose-500/20",
+      iconClass: "text-rose-500",
+      valueClass: "text-rose-400",
+    },
+  ] : [];
 
   return (
     <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-white">Informes y Estadisticas</h2>
-          <p className="text-sm text-cyan-400/70">Panel de reportes generales del sistema</p>
+          <h2 className="text-xl font-bold text-white">Informes por Periodo</h2>
+          <p className="text-sm text-cyan-400/70">
+            Estadísticas de facturación del sistema
+          </p>
         </div>
         <Badge className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 gap-1.5 px-3 py-1">
           <FileText className="h-4 w-4" />
@@ -77,118 +127,107 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
         </Badge>
       </div>
 
-      {/* Summary Cards */}
-      <InformesStatsCards estadisticas={stats} loading={loading} />
-
-      {/* ROC Period Filter */}
-      <ROCFiltroPeriodo
-        mes={rocMes}
-        anio={rocAnio}
-        onMesChange={setRocMes}
-        onAnioChange={setRocAnio}
-        onBuscar={buscarROCPorPeriodo}
-        rocCount={stats.rocPorPeriodo}
+      {/* Period Filter */}
+      <PeriodoFiltro
+        periodo={periodo}
+        anio={anio}
+        onPeriodoChange={setPeriodo}
+        onAnioChange={setAnio}
+        onBuscar={buscarInformes}
         loading={loading}
       />
 
-      {/* Detailed Reports Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* Clientes Activos */}
-        <Card className="bg-[#0A1628]/80 border-green-500/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-green-400 flex items-center gap-2 text-base">
-              <CheckCircle className="h-5 w-5" />
-              Clientes Activos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-5xl font-bold text-white mb-3">{stats.total}</div>
-            <p className="text-sm text-slate-400">
-              Clientes con servicio activo y pagos al día
-            </p>
-          </CardContent>
-        </Card>
+      {/* Period Title */}
+      {hasSearched && stats && (
+        <div className="mb-6">
+          <h3 className="text-lg font-medium text-white">
+            Resultados para:{" "}
+            <span className="text-cyan-400">
+              {PERIODOS_DISPLAY[periodo] || periodo} {anio}
+            </span>
+          </h3>
+        </div>
+      )}
 
-        {/* Clientes Pausados PPC */}
-        <Card className="bg-[#0A1628]/80 border-orange-500/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-orange-400 flex items-center gap-2 text-base">
-              <Clock className="h-5 w-5" />
-              Clientes Pausados PPC
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-5xl font-bold text-orange-400 mb-3">{stats.ppc}</div>
-            <p className="text-sm text-slate-400">
-              Clientes en pausa por problema de pago
-            </p>
-          </CardContent>
-        </Card>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="h-8 w-8 animate-spin text-cyan-500" />
+          <span className="ml-3 text-muted-foreground">Cargando estadísticas...</span>
+        </div>
+      )}
 
-        {/* Pendientes por Facturar */}
-        <Card className="bg-[#0A1628]/80 border-yellow-500/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-yellow-400 flex items-center gap-2 text-base">
-              <FileText className="h-5 w-5" />
-              Pendientes por Facturar
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-5xl font-bold text-yellow-400 mb-3">{stats.pendientesFacturar}</div>
-            <p className="text-sm text-slate-400">
-              Clientes con estado facturado pendientes de pago
-            </p>
-          </CardContent>
-        </Card>
+      {/* No Search Yet */}
+      {!hasSearched && !loading && (
+        <div className="text-center py-12 text-muted-foreground">
+          <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
+          <p>Selecciona un periodo y haz clic en "Ver Informe"</p>
+        </div>
+      )}
 
-        {/* Clientes Suspendidos */}
-        <Card className="bg-[#0A1628]/80 border-red-500/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-red-400 flex items-center gap-2 text-base">
-              <Ban className="h-5 w-5" />
-              Clientes Suspendidos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-5xl font-bold text-red-400 mb-3">{stats.suspendidas}</div>
-            <p className="text-sm text-slate-400">
-              Clientes con servicio suspendido por mora
-            </p>
-          </CardContent>
-        </Card>
+      {/* Stats Cards */}
+      {stats && !loading && (
+        <div className="grid grid-cols-2 xl:grid-cols-3 gap-6">
+          {statCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <Card
+                key={card.title}
+                className={`bg-[#0A1628]/80 ${card.bgClass}`}
+              >
+                <CardHeader className="pb-3">
+                  <CardTitle className={`flex items-center gap-2 text-base ${card.iconClass}`}>
+                    <Icon className="h-5 w-5" />
+                    {card.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-5xl font-bold ${card.valueClass} mb-2`}>
+                    {card.value}
+                  </div>
+                  <p className="text-sm text-slate-400">
+                    {card.description}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-        {/* Clientes en Mora */}
-        <Card className="bg-[#0A1628]/80 border-purple-500/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-purple-400 flex items-center gap-2 text-base">
-              <AlertTriangle className="h-5 w-5" />
-              Clientes en Mora
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-5xl font-bold text-purple-400 mb-3">{stats.enMora}</div>
-            <p className="text-sm text-slate-400">
-              Clientes con 2 o más facturas vencidas
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* ROC por Periodo */}
-        <Card className="bg-[#0A1628]/80 border-cyan-500/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-cyan-400 flex items-center gap-2 text-base">
-              <FileText className="h-5 w-5" />
-              ROC en Periodo
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-5xl font-bold text-cyan-400 mb-3">{stats.rocPorPeriodo}</div>
-            <p className="text-sm text-slate-400">
-              Clientes con facturas ROC en {getMesNombre(rocMes)} {rocAnio}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Summary Card */}
+      {stats && !loading && (
+        <div className="mt-8">
+          <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-cyan-500/30">
+            <CardHeader>
+              <CardTitle className="text-cyan-400 flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Resumen del Periodo
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-slate-400">Total Clientes Facturados</p>
+                  <p className="text-2xl font-bold text-green-400">{stats.facturado}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-400">Pendientes de Pago</p>
+                  <p className="text-2xl font-bold text-yellow-400">{stats.pendiente}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-400">En Proceso (PPC/ROC)</p>
+                  <p className="text-2xl font-bold text-orange-400">{stats.ppc + stats.roc}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-400">Sin Servicio</p>
+                  <p className="text-2xl font-bold text-red-400">{stats.suspendido}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

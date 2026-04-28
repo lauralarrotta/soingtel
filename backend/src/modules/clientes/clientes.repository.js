@@ -202,34 +202,81 @@ class ClientesRepository {
     };
   }
 
-  async getEstadisticasInformes(table = TABLAS.PRINCIPAL, { mes, anio } = {}) {
-    const [pendientesFacturar, enMora, rocResult] = await Promise.all([
-      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_facturacion = 'facturado' AND estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida')`),
-      pool.query(`SELECT COUNT(*) FROM ${table.cliente} c WHERE activo = true AND estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida') AND (SELECT COUNT(*) FROM ${table.factura} f WHERE f.cliente_id = c.id AND f.estado_pago IN ('pendiente', 'vencido')) >= 2`),
-      this.getROCCountByPeriod(table, mes, anio),
+  async getEstadisticasInformes(table = TABLAS.PRINCIPAL, { periodo, anio } = {}) {
+    // Si no hay periodo, retornar totales generales
+    if (!periodo && !anio) {
+      return {
+        totalClientes: 0,
+        facturado: 0,
+        ppc: 0,
+        pendiente: 0,
+        roc: 0,
+        suspendido: 0,
+        enMora: 0,
+      };
+    }
+
+    // Construir query base para facturas del periodo
+    let facturaWhere = `f.periodo = $1 AND f.anio = $2`;
+    const facturaParams = [periodo, anio];
+
+    // Estadísticas basadas en facturas del periodo
+    const [facturado, ppc, pendiente, roc, suspendido, enMora] = await Promise.all([
+      // Clientes con factura PAGADA en ese periodo
+      pool.query(`
+        SELECT COUNT(DISTINCT f.cliente_id) as count
+        FROM ${table.factura} f
+        JOIN ${table.cliente} c ON c.id = f.cliente_id
+        WHERE c.activo = true AND f.estado_pago = 'pagado' AND ${facturaWhere}
+      `, facturaParams),
+      // Clientes con factura PPC en ese periodo
+      pool.query(`
+        SELECT COUNT(DISTINCT f.cliente_id) as count
+        FROM ${table.factura} f
+        JOIN ${table.cliente} c ON c.id = f.cliente_id
+        WHERE c.activo = true AND f.estado_pago = 'ppc' AND ${facturaWhere}
+      `, facturaParams),
+      // Clientes con factura PENDIENTE en ese periodo
+      pool.query(`
+        SELECT COUNT(DISTINCT f.cliente_id) as count
+        FROM ${table.factura} f
+        JOIN ${table.cliente} c ON c.id = f.cliente_id
+        WHERE c.activo = true AND f.estado_pago = 'pendiente' AND ${facturaWhere}
+      `, facturaParams),
+      // Clientes con factura ROC en ese periodo
+      pool.query(`
+        SELECT COUNT(DISTINCT f.cliente_id) as count
+        FROM ${table.factura} f
+        JOIN ${table.cliente} c ON c.id = f.cliente_id
+        WHERE c.activo = true AND f.estado_pago = 'roc' AND ${facturaWhere}
+      `, facturaParams),
+      // Clientes SUSPENDIDOS (estado_pago del cliente)
+      pool.query(`
+        SELECT COUNT(DISTINCT c.id) as count
+        FROM ${table.cliente} c
+        WHERE c.activo = true AND c.estado_pago = 'suspendido'
+      `),
+      // Clientes en MORA (2+ facturas vencidas - no necesariamente del periodo)
+      pool.query(`
+        SELECT COUNT(DISTINCT c.id) as count
+        FROM ${table.cliente} c
+        WHERE c.activo = true
+        AND c.estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida')
+        AND (
+          SELECT COUNT(*) FROM ${table.factura} f
+          WHERE f.cliente_id = c.id AND f.estado_pago IN ('pendiente', 'vencido')
+        ) >= 2
+      `),
     ]);
 
     return {
-      pendientesFacturar: parseInt(pendientesFacturar.rows[0].count),
+      facturado: parseInt(facturado.rows[0].count),
+      ppc: parseInt(ppc.rows[0].count),
+      pendiente: parseInt(pendiente.rows[0].count),
+      roc: parseInt(roc.rows[0].count),
+      suspendido: parseInt(suspendido.rows[0].count),
       enMora: parseInt(enMora.rows[0].count),
-      rocPorPeriodo: parseInt(rocResult.rows[0].count),
     };
-  }
-
-  async getROCCountByPeriod(table, mes, anio) {
-    let query = `SELECT COUNT(DISTINCT c.id) FROM ${table.cliente} c JOIN ${table.factura} f ON f.cliente_id = c.id WHERE c.activo = true AND f.estado_pago = 'roc'`;
-    const params = [];
-
-    if (mes) {
-      params.push(mes);
-      query += ` AND f.periodo = $${params.length}`;
-    }
-    if (anio) {
-      params.push(anio);
-      query += ` AND f.anio = $${params.length}`;
-    }
-
-    return pool.query(query, params);
   }
 
   async findAllForExport(table = TABLAS.PRINCIPAL) {

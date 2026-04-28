@@ -99,19 +99,9 @@ class ClientesService {
     return clientesRepository.getEstadisticas(table);
   }
 
-  async obtenerEstadisticasInformes(sede = "principal", { mes, anio } = {}) {
+  async obtenerEstadisticasInformes(sede = "principal", { periodo, anio } = {}) {
     const table = sede === "fusagasuga" ? TABLAS.FUSAGASUGA : TABLAS.PRINCIPAL;
-
-    // Obtener estadísticas base
-    const baseStats = await clientesRepository.getEstadisticas(table);
-
-    // Obtener estadísticas adicionales para informes
-    const informesStats = await clientesRepository.getEstadisticasInformes(table, { mes, anio });
-
-    return {
-      ...baseStats,
-      ...informesStats,
-    };
+    return clientesRepository.getEstadisticasInformes(table, { periodo, anio });
   }
 
   async recalcularEstados(sede = "principal") {
