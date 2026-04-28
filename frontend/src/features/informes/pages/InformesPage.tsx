@@ -52,42 +52,72 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
     {
       title: "Facturados",
       value: stats.facturado,
+      icon: FileText,
+      color: "cyan",
+      description: "Total con factura en el periodo",
+      bgClass: "border-cyan-500/20",
+      iconClass: "text-cyan-400",
+      valueClass: "text-cyan-400",
+    },
+    {
+      title: "Pagados",
+      value: stats.pagados,
       icon: CheckCircle,
       color: "green",
-      description: "Clientes que pagaron en el periodo",
+      description: "Ya pagaron en el periodo",
       bgClass: "border-green-500/20",
       iconClass: "text-green-500",
       valueClass: "text-green-400",
+    },
+    {
+      title: "Pendientes",
+      value: stats.pendientes,
+      icon: Clock,
+      color: "yellow",
+      description: "Factura pendiente en el periodo",
+      bgClass: "border-yellow-500/20",
+      iconClass: "text-yellow-500",
+      valueClass: "text-yellow-400",
+    },
+    {
+      title: "Vencidos",
+      value: stats.vencidos,
+      icon: AlertTriangle,
+      color: "red",
+      description: "Factura vencida en el periodo",
+      bgClass: "border-red-500/20",
+      iconClass: "text-red-500",
+      valueClass: "text-red-400",
     },
     {
       title: "PPC",
       value: stats.ppc,
       icon: Clock,
       color: "orange",
-      description: "Clientes en pausa por pago",
+      description: "Pausa por pago en el periodo",
       bgClass: "border-orange-500/20",
       iconClass: "text-orange-500",
       valueClass: "text-orange-400",
-    },
-    {
-      title: "Pendientes",
-      value: stats.pendiente,
-      icon: FileText,
-      color: "yellow",
-      description: "Facturas pendientes de pago",
-      bgClass: "border-yellow-500/20",
-      iconClass: "text-yellow-500",
-      valueClass: "text-yellow-400",
     },
     {
       title: "ROC",
       value: stats.roc,
       icon: AlertTriangle,
       color: "purple",
-      description: "Clientes con reclamación",
+      description: "Reclamación en el periodo",
       bgClass: "border-purple-500/20",
       iconClass: "text-purple-500",
       valueClass: "text-purple-400",
+    },
+    {
+      title: "x Facturar",
+      value: stats.pendientesFacturar,
+      icon: FileText,
+      color: "slate",
+      description: "Sin factura en el periodo",
+      bgClass: "border-slate-500/20",
+      iconClass: "text-slate-400",
+      valueClass: "text-slate-400",
     },
     {
       title: "Suspendidos",
@@ -98,16 +128,6 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       bgClass: "border-red-500/20",
       iconClass: "text-red-500",
       valueClass: "text-red-400",
-    },
-    {
-      title: "En Mora",
-      value: stats.enMora,
-      icon: AlertTriangle,
-      color: "rose",
-      description: "Clientes con 2+ facturas vencidas",
-      bgClass: "border-rose-500/20",
-      iconClass: "text-rose-500",
-      valueClass: "text-rose-400",
     },
   ] : [];
 
@@ -208,12 +228,12 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-sm text-slate-400">Total Clientes Facturados</p>
-                  <p className="text-2xl font-bold text-green-400">{stats.facturado}</p>
+                  <p className="text-sm text-slate-400">Total Facturados</p>
+                  <p className="text-2xl font-bold text-cyan-400">{stats.facturado}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-400">Pendientes de Pago</p>
-                  <p className="text-2xl font-bold text-yellow-400">{stats.pendiente}</p>
+                  <p className="text-sm text-slate-400">Sin Facturar</p>
+                  <p className="text-2xl font-bold text-slate-400">{stats.pendientesFacturar}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">En Proceso (PPC/ROC)</p>

@@ -3,11 +3,14 @@ import { fetchWithRetry } from "@/utils/fetchWithRetry";
 
 export interface InformesStats {
   facturado: number;
+  pagados: number;
+  pendientes: number;
+  vencidos: number;
   ppc: number;
-  pendiente: number;
   roc: number;
   suspendido: number;
   enMora: number;
+  pendientesFacturar: number;
 }
 
 export const informesService = {

@@ -221,61 +221,86 @@ class ClientesRepository {
     const facturaParams = [periodo, anio];
 
     // Estadísticas basadas en facturas del periodo
-    const [facturado, ppc, pendiente, roc, suspendido, enMora] = await Promise.all([
-      // Clientes con factura PAGADA en ese periodo
+    const [totalFacturados, pagados, pendientes, vencidos, ppc, roc, suspendido, enMoraPeriodo, pendientesFacturar] = await Promise.all([
+      // Total clientes con factura en ese periodo
+      pool.query(`
+        SELECT COUNT(DISTINCT f.cliente_id) as count
+        FROM ${table.factura} f
+        JOIN ${table.cliente} c ON c.id = f.cliente_id
+        WHERE c.activo = true AND ${facturaWhere}
+      `, facturaParams),
+      // Con factura PAGADA en ese periodo
       pool.query(`
         SELECT COUNT(DISTINCT f.cliente_id) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
         WHERE c.activo = true AND f.estado_pago = 'pagado' AND ${facturaWhere}
       `, facturaParams),
-      // Clientes con factura PPC en ese periodo
-      pool.query(`
-        SELECT COUNT(DISTINCT f.cliente_id) as count
-        FROM ${table.factura} f
-        JOIN ${table.cliente} c ON c.id = f.cliente_id
-        WHERE c.activo = true AND f.estado_pago = 'ppc' AND ${facturaWhere}
-      `, facturaParams),
-      // Clientes con factura PENDIENTE en ese periodo
+      // Con factura PENDIENTE en ese periodo
       pool.query(`
         SELECT COUNT(DISTINCT f.cliente_id) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
         WHERE c.activo = true AND f.estado_pago = 'pendiente' AND ${facturaWhere}
       `, facturaParams),
-      // Clientes con factura ROC en ese periodo
+      // Con factura VENCIDA en ese periodo
+      pool.query(`
+        SELECT COUNT(DISTINCT f.cliente_id) as count
+        FROM ${table.factura} f
+        JOIN ${table.cliente} c ON c.id = f.cliente_id
+        WHERE c.activo = true AND f.estado_pago = 'vencido' AND ${facturaWhere}
+      `, facturaParams),
+      // Con factura PPC en ese periodo
+      pool.query(`
+        SELECT COUNT(DISTINCT f.cliente_id) as count
+        FROM ${table.factura} f
+        JOIN ${table.cliente} c ON c.id = f.cliente_id
+        WHERE c.activo = true AND f.estado_pago = 'ppc' AND ${facturaWhere}
+      `, facturaParams),
+      // Con factura ROC en ese periodo
       pool.query(`
         SELECT COUNT(DISTINCT f.cliente_id) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
         WHERE c.activo = true AND f.estado_pago = 'roc' AND ${facturaWhere}
       `, facturaParams),
-      // Clientes SUSPENDIDOS (estado_pago del cliente)
+      // Clientes SUSPENDIDOS (estado_pago del cliente, no tienen factura en el periodo)
       pool.query(`
         SELECT COUNT(DISTINCT c.id) as count
         FROM ${table.cliente} c
         WHERE c.activo = true AND c.estado_pago = 'suspendido'
       `),
-      // Clientes en MORA (2+ facturas vencidas - no necesariamente del periodo)
+      // Clientes en MORA en ese periodo (tienen factura vencida en el periodo)
+      pool.query(`
+        SELECT COUNT(DISTINCT f.cliente_id) as count
+        FROM ${table.factura} f
+        JOIN ${table.cliente} c ON c.id = f.cliente_id
+        WHERE c.activo = true AND f.estado_pago = 'vencido' AND ${facturaWhere}
+      `, facturaParams),
+      // Clientes SIN factura en ese periodo pero con estado_facturacion='facturado'
       pool.query(`
         SELECT COUNT(DISTINCT c.id) as count
         FROM ${table.cliente} c
         WHERE c.activo = true
+        AND c.estado_facturacion = 'facturado'
         AND c.estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida')
-        AND (
-          SELECT COUNT(*) FROM ${table.factura} f
-          WHERE f.cliente_id = c.id AND f.estado_pago IN ('pendiente', 'vencido')
-        ) >= 2
-      `),
+        AND c.id NOT IN (
+          SELECT DISTINCT f.cliente_id FROM ${table.factura} f
+          WHERE f.periodo = $1 AND f.anio = $2
+        )
+      `, facturaParams),
     ]);
 
     return {
-      facturado: parseInt(facturado.rows[0].count),
+      facturado: parseInt(totalFacturados.rows[0].count),
+      pagados: parseInt(pagados.rows[0].count),
+      pendientes: parseInt(pendientes.rows[0].count),
+      vencidos: parseInt(vencidos.rows[0].count),
       ppc: parseInt(ppc.rows[0].count),
-      pendiente: parseInt(pendiente.rows[0].count),
       roc: parseInt(roc.rows[0].count),
       suspendido: parseInt(suspendido.rows[0].count),
-      enMora: parseInt(enMora.rows[0].count),
+      enMora: parseInt(enMoraPeriodo.rows[0].count),
+      pendientesFacturar: parseInt(pendientesFacturar.rows[0].count),
     };
   }
 
