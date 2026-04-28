@@ -54,7 +54,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       value: stats.facturado,
       icon: FileText,
       color: "cyan",
-      description: "Total con factura en el periodo",
+      description: "Con factura generada en el periodo",
       bgClass: "border-cyan-500/20",
       iconClass: "text-cyan-400",
       valueClass: "text-cyan-400",

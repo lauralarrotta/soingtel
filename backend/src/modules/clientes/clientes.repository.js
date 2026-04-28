@@ -222,14 +222,13 @@ class ClientesRepository {
 
     // Estadísticas basadas en facturas del periodo
     const [totalFacturados, pagados, pendientes, vencidos, ppc, roc, suspendido, enMoraPeriodo, pendientesFacturar] = await Promise.all([
-      // Total clientes con estado_facturacion='facturado' (no depende de si tiene factura en el periodo)
+      // Total clientes CON factura en ese periodo (sin importar estado_pago de la factura)
       pool.query(`
-        SELECT COUNT(DISTINCT c.id) as count
-        FROM ${table.cliente} c
-        WHERE c.activo = true
-        AND c.estado_facturacion = 'facturado'
-        AND c.estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida')
-      `),
+        SELECT COUNT(DISTINCT f.cliente_id) as count
+        FROM ${table.factura} f
+        JOIN ${table.cliente} c ON c.id = f.cliente_id
+        WHERE c.activo = true AND ${facturaWhere}
+      `, facturaParams),
       // Con factura PAGADA en ese periodo
       pool.query(`
         SELECT COUNT(DISTINCT f.cliente_id) as count
@@ -287,7 +286,7 @@ class ClientesRepository {
         SELECT COUNT(DISTINCT c.id) as count
         FROM ${table.cliente} c
         WHERE c.activo = true
-        AND c.estado_facturacion = 'facturado'
+        AND c.estado_facturacion IN ('facturado', 'FACTURADO')
         AND c.estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida')
         AND c.id NOT IN (
           SELECT DISTINCT f.cliente_id FROM ${table.factura} f
