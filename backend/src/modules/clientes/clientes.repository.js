@@ -272,14 +272,16 @@ class ClientesRepository {
       `),
       // Clientes en MORA en ese periodo (2+ facturas pendientes/vencidas del periodo)
       pool.query(`
-        SELECT COUNT(DISTINCT f.cliente_id) as count
-        FROM ${table.factura} f
-        JOIN ${table.cliente} c ON c.id = f.cliente_id
-        WHERE c.activo = true
-        AND f.estado_pago IN ('pendiente', 'vencido')
-        AND f.periodo = $1 AND f.anio = $2
-        GROUP BY f.cliente_id
-        HAVING COUNT(*) >= 2
+        SELECT COUNT(*) as count FROM (
+          SELECT f.cliente_id
+          FROM ${table.factura} f
+          JOIN ${table.cliente} c ON c.id = f.cliente_id
+          WHERE c.activo = true
+          AND f.estado_pago IN ('pendiente', 'vencido')
+          AND f.periodo = $1 AND f.anio = $2
+          GROUP BY f.cliente_id
+          HAVING COUNT(*) >= 2
+        ) sub
       `, facturaParams),
       // Clientes SIN factura en ese periodo pero con estado_facturacion='facturado'
       pool.query(`
