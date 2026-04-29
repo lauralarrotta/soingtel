@@ -143,7 +143,7 @@ export function EditarFacturaModal({
 
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-2">
-                <Label htmlFor="periodo">Periodo *</Label>
+                <Label htmlFor="periodo">Periodo</Label>
                 <Select
                   value={facturaEditada.periodo}
                   onValueChange={(value) =>
@@ -155,12 +155,17 @@ export function EditarFacturaModal({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Ene-Feb">Ene-Feb</SelectItem>
+                    <SelectItem value="Feb-Mar">Feb-Mar</SelectItem>
                     <SelectItem value="Mar-Abr">Mar-Abr</SelectItem>
+                    <SelectItem value="Abr-May">Abr-May</SelectItem>
                     <SelectItem value="May-Jun">May-Jun</SelectItem>
+                    <SelectItem value="Jun-Jul">Jun-Jul</SelectItem>
                     <SelectItem value="Jul-Ago">Jul-Ago</SelectItem>
+                    <SelectItem value="Ago-Sep">Ago-Sep</SelectItem>
                     <SelectItem value="Sep-Oct">Sep-Oct</SelectItem>
                     <SelectItem value="Oct-Nov">Oct-Nov</SelectItem>
                     <SelectItem value="Nov-Dic">Nov-Dic</SelectItem>
+                    <SelectItem value="Dic-Ene">Dic-Ene</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

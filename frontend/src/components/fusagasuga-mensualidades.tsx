@@ -107,6 +107,11 @@ export function FusagasugaMensualidades({
     suspendidas: 0,
     garantias: 0,
     transferidas: 0,
+    totalFacturas: 0,
+    facturasPagadas: 0,
+    facturasPendientes: 0,
+    facturasVencidas: 0,
+    clientesEnMora: 0,
   });
 
   const cargarEstadisticas = async () => {
@@ -147,7 +152,7 @@ export function FusagasugaMensualidades({
 
   useEffect(() => {
     cargarEstadisticas();
-  }, [clientes]);
+  }, []);
 
   useEffect(() => {
     const handleReload = () => {
@@ -647,11 +652,8 @@ export function FusagasugaMensualidades({
     (c) => c.estado_pago === "pendiente",
   ).length;
 
-  // Calcular clientes en mora (EXACTAMENTE 2 facturas vencidas y no suspendidos)
-  const clientesEnMora = clientes.filter((c) => {
-    const facturasVencidas = contarFacturasVencidas(c);
-    return facturasVencidas === 2 && c.estado_pago !== "suspendido";
-  }).length;
+  // Usar clientesEnMora del backend (estadisticas)
+  const clientesEnMora = estadisticas.clientesEnMora || 0;
 
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
@@ -748,7 +750,7 @@ export function FusagasugaMensualidades({
     <div className="p-6">
       {userType === "admin" && (
         <div className="mb-6">
-          <DashboardStats clientes={clientes} />
+          <DashboardStats estadisticas={estadisticas} />
         </div>
       )}
 

@@ -157,7 +157,7 @@ const crearCliente = async (cliente: Cliente) => {
 
   useEffect(() => {
     cargarEstadisticas();
-  }, [clientes, cargarEstadisticas]);
+  }, []);
 
   useEffect(() => {
     const handleReload = () => {
@@ -669,7 +669,7 @@ const handleSaveClienteCompleto = async (
     <div className="p-6">
       {userType === "admin" && (
         <div className="mb-6">
-          <DashboardStats clientes={clientes} />
+          <DashboardStats estadisticas={estadisticas} />
         </div>
       )}
 

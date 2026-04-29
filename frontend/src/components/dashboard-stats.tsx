@@ -12,45 +12,30 @@ import {
   FileText,
 } from "lucide-react";
 
-interface Cliente {
-  kit: string;
-  nombrecliente: string;
-  cuenta: string;
-  email: string;
-  corte: number;
-  estado_pago: "confirmado" | "pendiente" | "suspendido" | "en_dano" | string;
-  observaciones: string;
-  costo: string;
-  facturas?: any[];
+interface Estadisticas {
+  total: number;
+  ppc: number;
+  danadas: number;
+  suspendidas: number;
+  garantias: number;
+  transferidas: number;
+  totalFacturas: number;
+  facturasPagadas: number;
+  facturasPendientes: number;
+  facturasVencidas: number;
 }
 
 interface DashboardStatsProps {
-  clientes: Cliente[];
+  estadisticas?: Estadisticas;
 }
 
-export function DashboardStats({ clientes }: DashboardStatsProps) {
-  const totalClientes = clientes.length;
-  const clientesConfirmados = clientes.filter((c) => c.estado_pago === "confirmado").length;
-  const clientesSuspendidos = clientes.filter((c) => c.estado_pago === "suspendido").length;
-
-  const totalFacturas = clientes.reduce((acc, c) => acc + (c.facturas?.length || 0), 0);
-
-  const facturasPagadas = clientes.reduce((acc, c) => {
-    return acc + (c.facturas?.filter((f) => f.estadoPago === "pagado").length || 0);
-  }, 0);
-
-  const facturasPendientes = clientes.reduce((acc, c) => {
-    return acc + (c.facturas?.filter((f) => f.estadoPago === "pendiente").length || 0);
-  }, 0);
-
-  const clientesEnMora = clientes.filter((c) => {
-    const vencidas = c.facturas?.filter((f) => f.estadoPago === "vencido").length || 0;
-    return vencidas >= 2;
-  }).length;
-
-  const montoFacturasPagadas = clientes.reduce((acc, c) => {
-    return acc + (c.facturas?.filter((f) => f.estadoPago === "pagado").reduce((sum, f) => sum + parseFloat(f.monto || "0"), 0) || 0);
-  }, 0);
+export function DashboardStats({ estadisticas }: DashboardStatsProps) {
+  const totalClientes = estadisticas?.total || 0;
+  const totalFacturas = estadisticas?.totalFacturas || 0;
+  const facturasPagadas = estadisticas?.facturasPagadas || 0;
+  const facturasPendientes = estadisticas?.facturasPendientes || 0;
+  const facturasVencidas = estadisticas?.facturasVencidas || 0;
+  const clientesEnMora = estadisticas?.clientesEnMora || 0;
 
   const promedioFacturasPorCliente = totalClientes > 0 ? (totalFacturas / totalClientes).toFixed(1) : "0";
 
@@ -88,7 +73,7 @@ export function DashboardStats({ clientes }: DashboardStatsProps) {
             <CardContent className="relative z-10">
               <div className="text-4xl font-bold text-green-400">{facturasPagadas}</div>
               <p className="text-xs text-green-400/60 mt-1 font-medium">
-                ${montoFacturasPagadas.toFixed(0)}
+                confirmadas
               </p>
             </CardContent>
           </Card>
@@ -122,7 +107,7 @@ export function DashboardStats({ clientes }: DashboardStatsProps) {
             <CardContent className="relative z-10">
               <div className="text-4xl font-bold text-red-400">{clientesEnMora}</div>
               <p className="text-xs text-red-400/60 mt-1 font-medium">
-                clientes con 2+ facturas vencidas
+                clientes con 2+ vencidas
               </p>
             </CardContent>
           </Card>

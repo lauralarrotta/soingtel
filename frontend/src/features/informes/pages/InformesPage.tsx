@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { PeriodoFiltro } from "../components/ROCFiltroPeriodo";
 import { informesService, InformesStats } from "@/services/informesService";
 import { RefreshCw, FileText, CheckCircle, Clock, Ban, AlertTriangle, DollarSign } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 
 interface InformesPageProps {
   userType?: string;
@@ -29,7 +33,15 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
   const [stats, setStats] = useState<InformesStats | null>(null);
   const [periodo, setPeriodo] = useState("ene-feb");
   const [anio, setAnio] = useState(new Date().getFullYear().toString());
+  const [sede, setSede] = useState("principal");
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Modal de detalle
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailType, setDetailType] = useState<string>("");
+  const [detailTitle, setDetailTitle] = useState<string>("");
+  const [detailData, setDetailData] = useState<any[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const displayValue = (value: number, sinFacturas?: boolean) => {
     if (sinFacturas) return "Sin facturas";
@@ -40,7 +52,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
     setLoading(true);
     setHasSearched(true);
     try {
-      const data = await informesService.obtenerEstadisticas(periodo, anio);
+      const data = await informesService.obtenerEstadisticas(periodo, anio, sede);
       setStats(data);
     } catch (error) {
       console.error("Error cargando informes:", error);
@@ -53,6 +65,23 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
     buscarInformes();
   }, []);
 
+  // Abrir modal de detalle
+  const abrirDetalle = async (type: string, title: string) => {
+    setDetailType(type);
+    setDetailTitle(title);
+    setDetailModalOpen(true);
+    setDetailLoading(true);
+    try {
+      const data = await informesService.obtenerDetalle(periodo, anio, sede, type);
+      setDetailData(data);
+    } catch (error) {
+      console.error("Error cargando detalle:", error);
+      setDetailData([]);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const statCards = stats ? [
     {
       title: "Facturados",
@@ -63,6 +92,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       bgClass: "border-cyan-500/20",
       iconClass: "text-cyan-400",
       valueClass: "text-cyan-400",
+      type: "facturado",
     },
     {
       title: "Pagados",
@@ -73,6 +103,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       bgClass: "border-green-500/20",
       iconClass: "text-green-500",
       valueClass: "text-green-400",
+      type: "pagado",
     },
     {
       title: "Pendientes",
@@ -83,16 +114,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       bgClass: "border-yellow-500/20",
       iconClass: "text-yellow-500",
       valueClass: "text-yellow-400",
-    },
-    {
-      title: "Vencidos",
-      value: stats.vencidos,
-      icon: AlertTriangle,
-      color: "red",
-      description: "Factura vencida en el periodo",
-      bgClass: "border-red-500/20",
-      iconClass: "text-red-500",
-      valueClass: "text-red-400",
+      type: "pendiente",
     },
     {
       title: "PPC",
@@ -103,6 +125,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       bgClass: "border-orange-500/20",
       iconClass: "text-orange-500",
       valueClass: "text-orange-400",
+      type: "ppc",
     },
     {
       title: "ROC",
@@ -113,6 +136,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       bgClass: "border-purple-500/20",
       iconClass: "text-purple-500",
       valueClass: "text-purple-400",
+      type: "roc",
     },
     {
       title: "x Facturar",
@@ -123,6 +147,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       bgClass: "border-slate-500/20",
       iconClass: "text-slate-400",
       valueClass: "text-slate-400",
+      type: "pendientesFacturar",
     },
     {
       title: "En Mora",
@@ -133,6 +158,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       bgClass: "border-rose-500/20",
       iconClass: "text-rose-500",
       valueClass: "text-rose-400",
+      type: "enMora",
     },
     {
       title: "Suspendidos",
@@ -143,6 +169,7 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       bgClass: "border-red-500/20",
       iconClass: "text-red-500",
       valueClass: "text-red-400",
+      type: "suspendido",
     },
   ] : [];
 
@@ -151,38 +178,53 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-white">Informes por Periodo</h2>
+          <h2 className="text-xl font-bold text-black">Informes por Periodo</h2>
           <p className="text-sm text-cyan-400/70">
             Estadísticas de facturación del sistema
           </p>
         </div>
-        <Badge className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 gap-1.5 px-3 py-1">
-          <FileText className="h-4 w-4" />
-          Admin Reports
-        </Badge>
       </div>
 
       {/* Period Filter */}
-      <PeriodoFiltro
-        periodo={periodo}
-        anio={anio}
-        onPeriodoChange={setPeriodo}
-        onAnioChange={setAnio}
-        onBuscar={buscarInformes}
-        loading={loading}
-      />
-
-      {/* Period Title */}
-      {hasSearched && stats && (
-        <div className="mb-6">
-          <h3 className="text-lg font-medium text-white">
-            Resultados para:{" "}
-            <span className="text-cyan-400">
+      <div className="bg-gradient-to-r from-cyan-50/80 to-blue-50/80 dark:from-[#0F2744]/80 dark:to-[#0A1628]/80 rounded-xl p-4 mb-6 border border-cyan-100/50 dark:border-cyan-500/20">
+        <div className="flex flex-wrap gap-4 items-center justify-between">
+          {/* Periodo seleccionado - Izquierda */}
+          <div className="px-6 py-3 bg-white/50 dark:bg-[#0A1628]/50 rounded-lg border border-cyan-200/50 dark:border-cyan-500/30">
+            <p className="text-sm text-muted-foreground text-center">
+              Periodo seleccionado
+            </p>
+            <p className="text-xl font-bold text-cyan-600 dark:text-cyan-400 text-center">
               {PERIODOS_DISPLAY[periodo] || periodo} {anio}
-            </span>
-          </h3>
+            </p>
+          </div>
+
+          {/* Periodo y Año - Centro */}
+          <PeriodoFiltro
+            periodo={periodo}
+            anio={anio}
+            onPeriodoChange={setPeriodo}
+            onAnioChange={setAnio}
+            onBuscar={buscarInformes}
+            loading={loading}
+          />
+
+          {/* Sede - Derecha */}
+          <div className="flex flex-col gap-1">
+            <Label className="text-sm font-medium text-cyan-600 dark:text-cyan-400">
+              Sede
+            </Label>
+            <Select value={sede} onValueChange={(v) => { setSede(v); }}>
+              <SelectTrigger className="w-[140px] bg-white/80 dark:bg-[#0A1628]/80 border-cyan-200/50 dark:border-cyan-500/30">
+                <SelectValue placeholder="Sede" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-[#0A1628] border-cyan-200/50 dark:border-cyan-500/30">
+                <SelectItem value="principal">Principal</SelectItem>
+                <SelectItem value="fusagasuga">Fusagasuga</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Loading State */}
       {loading && (
@@ -202,14 +244,15 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
 
       {/* Stats Cards */}
       {stats && !loading && (
-        <div className="grid grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           {statCards.map((card) => {
             const Icon = card.icon;
             const displayVal = card.title === "Facturados" ? displayValue(card.value, stats.sinFacturas) : card.value;
             return (
               <Card
                 key={card.title}
-                className={`bg-[#0A1628]/80 ${card.bgClass}`}
+                onClick={() => abrirDetalle(card.type, card.title)}
+                className={`bg-[#0A1628]/80 ${card.bgClass} cursor-pointer hover:ring-2 hover:ring-white/20 transition-all`}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className={`flex items-center gap-2 text-base ${card.iconClass}`}>
@@ -231,41 +274,42 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
         </div>
       )}
 
-      {/* Summary Card */}
-      {stats && !loading && (
-        <div className="mt-8">
-          <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-cyan-500/30">
-            <CardHeader>
-              <CardTitle className="text-cyan-400 flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Resumen del Periodo
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-sm text-slate-400">Total Facturados</p>
-                  <p className="text-2xl font-bold text-cyan-400">
-                    {stats.sinFacturas ? "Sin facturas" : stats.facturado}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400">Sin Facturar</p>
-                  <p className="text-2xl font-bold text-slate-400">{stats.pendientesFacturar}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400">En Proceso (PPC/ROC)</p>
-                  <p className="text-2xl font-bold text-orange-400">{stats.ppc + stats.roc}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400">Sin Servicio</p>
-                  <p className="text-2xl font-bold text-red-400">{stats.suspendido}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Modal de Detalle */}
+      <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
+        <DialogContent className="!max-w-[95vw] !w-[95vw] h-[85vh] overflow-hidden flex flex-col p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl mb-4">{detailTitle} - {PERIODOS_DISPLAY[periodo] || periodo} {anio}</DialogTitle>
+          </DialogHeader>
+          {detailLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="h-8 w-8 animate-spin text-cyan-500" />
+            </div>
+          ) : (
+            <div className="overflow-auto flex-1">
+              {detailData.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No hay datos</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Kit</TableHead>
+                      <TableHead>Cliente</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detailData.map((cliente) => (
+                      <TableRow key={cliente.kit}>
+                        <TableCell className="font-mono">{cliente.kit}</TableCell>
+                        <TableCell>{cliente.nombre_cliente}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
