@@ -183,7 +183,7 @@ class ClientesRepository {
   }
 
   async getEstadisticas(table = TABLAS.PRINCIPAL) {
-    const [total, ppc, danadas, susp, gar, trans] = await Promise.all([
+    const [total, ppc, danadas, susp, gar, trans, totalFacturas, pagadas, pendientes, vencidas, clientesEnMora] = await Promise.all([
       // Total activos = todos menos en_dano, transferencia, garantia
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago NOT IN ('en_dano', 'transferida', 'garantia')`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND (estado_facturacion = 'PPC' OR estado_pago = 'ppc')`),
@@ -191,6 +191,24 @@ class ClientesRepository {
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'suspendido'`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'garantia'`),
       pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'transferida'`),
+      // Total facturas
+      pool.query(`SELECT COUNT(*) FROM ${table.factura} f JOIN ${table.cliente} c ON c.id = f.cliente_id WHERE c.activo = true`),
+      // Facturas pagadas
+      pool.query(`SELECT COUNT(*) FROM ${table.factura} f JOIN ${table.cliente} c ON c.id = f.cliente_id WHERE c.activo = true AND f.estado_pago = 'pagado'`),
+      // Facturas pendientes
+      pool.query(`SELECT COUNT(*) FROM ${table.factura} f JOIN ${table.cliente} c ON c.id = f.cliente_id WHERE c.activo = true AND f.estado_pago = 'pendiente'`),
+      // Facturas vencidas
+      pool.query(`SELECT COUNT(*) FROM ${table.factura} f JOIN ${table.cliente} c ON c.id = f.cliente_id WHERE c.activo = true AND f.estado_pago = 'vencido'`),
+      // Clientes en mora (3+ facturas pendientes - "mas de dos")
+      pool.query(`
+        SELECT COUNT(*) FROM (
+          SELECT c.id FROM ${table.factura} f
+          JOIN ${table.cliente} c ON c.id = f.cliente_id
+          WHERE c.activo = true AND c.estado_pago != 'suspendido' AND f.estado_pago = 'pendiente'
+          GROUP BY c.id
+          HAVING COUNT(*) > 2
+        ) AS clientes_mora
+      `),
     ]);
 
     return {
@@ -200,6 +218,11 @@ class ClientesRepository {
       suspendidas: parseInt(susp.rows[0].count),
       garantias: parseInt(gar.rows[0].count),
       transferidas: parseInt(trans.rows[0].count),
+      totalFacturas: parseInt(totalFacturas.rows[0].count),
+      facturasPagadas: parseInt(pagadas.rows[0].count),
+      facturasPendientes: parseInt(pendientes.rows[0].count),
+      facturasVencidas: parseInt(vencidas.rows[0].count),
+      clientesEnMora: parseInt(clientesEnMora.rows[0].count),
     };
   }
 
@@ -217,8 +240,8 @@ class ClientesRepository {
       };
     }
 
-    // Construir query base para facturas del periodo
-    let facturaWhere = `f.periodo = $1 AND f.anio = $2`;
+    // Construir query base para facturas del periodo (case insensitive)
+    let facturaWhere = `LOWER(f.periodo) = LOWER($1) AND f.anio = $2`;
     const facturaParams = [periodo, anio];
 
     // Estadísticas basadas en facturas del periodo
@@ -279,21 +302,20 @@ class ClientesRepository {
           JOIN ${table.cliente} c ON c.id = f.cliente_id
           WHERE c.activo = true
           AND f.estado_pago IN ('pendiente', 'vencido')
-          AND f.periodo = $1 AND f.anio = $2
+          AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
           GROUP BY f.cliente_id
           HAVING COUNT(*) >= 2
         ) sub
       `, facturaParams),
-      // Clientes SIN factura en ese periodo pero con estado_facturacion='facturado'
+      // Clientes SIN factura en ese periodo (excluyendo estados especiales)
       pool.query(`
         SELECT COUNT(DISTINCT c.id) as count
         FROM ${table.cliente} c
         WHERE c.activo = true
-        AND c.estado_facturacion IN ('facturado', 'FACTURADO')
         AND c.estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida')
         AND c.id NOT IN (
           SELECT DISTINCT f.cliente_id FROM ${table.factura} f
-          WHERE f.periodo = $1 AND f.anio = $2
+          WHERE LOWER(f.periodo) = LOWER($1) AND COALESCE(f.anio, 0) = COALESCE($2, 0)
         )
       `, facturaParams),
     ]);
@@ -312,6 +334,107 @@ class ClientesRepository {
       pendientesFacturar: parseInt(pendientesFacturar.rows[0].count),
       sinFacturas: !hayFacturasEnPeriodo,
     };
+  }
+
+  async getDetalleInforme(table = TABLAS.PRINCIPAL, { periodo, anio, tipo } = {}) {
+    let query;
+    const params = [periodo, anio];
+
+    switch (tipo) {
+      case "facturado":
+        // Clientes con factura en el periodo
+        query = `
+          SELECT DISTINCT c.kit, c.nombre_cliente
+          FROM ${table.cliente} c
+          JOIN ${table.factura} f ON f.cliente_id = c.id
+          WHERE c.activo = true AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+          ORDER BY c.nombre_cliente
+        `;
+        break;
+      case "pagado":
+        // Clientes con factura pagada en el periodo
+        query = `
+          SELECT DISTINCT c.kit, c.nombre_cliente
+          FROM ${table.cliente} c
+          JOIN ${table.factura} f ON f.cliente_id = c.id
+          WHERE c.activo = true AND f.estado_pago = 'pagado' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+          ORDER BY c.nombre_cliente
+        `;
+        break;
+      case "pendiente":
+        // Clientes con factura pendiente en el periodo
+        query = `
+          SELECT DISTINCT c.kit, c.nombre_cliente
+          FROM ${table.cliente} c
+          JOIN ${table.factura} f ON f.cliente_id = c.id
+          WHERE c.activo = true AND f.estado_pago = 'pendiente' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+          ORDER BY c.nombre_cliente
+        `;
+        break;
+      case "ppc":
+        // Clientes con factura PPC en el periodo
+        query = `
+          SELECT DISTINCT c.kit, c.nombre_cliente
+          FROM ${table.cliente} c
+          JOIN ${table.factura} f ON f.cliente_id = c.id
+          WHERE c.activo = true AND f.estado_pago = 'ppc' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+          ORDER BY c.nombre_cliente
+        `;
+        break;
+      case "roc":
+        // Clientes con factura ROC en el periodo
+        query = `
+          SELECT DISTINCT c.kit, c.nombre_cliente
+          FROM ${table.cliente} c
+          JOIN ${table.factura} f ON f.cliente_id = c.id
+          WHERE c.activo = true AND f.estado_pago = 'roc' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+          ORDER BY c.nombre_cliente
+        `;
+        break;
+      case "enMora":
+        // Clientes en mora (2+ facturas pendientes/vencidas en el periodo)
+        query = `
+          SELECT c.kit, c.nombre_cliente
+          FROM ${table.cliente} c
+          WHERE c.activo = true AND c.id IN (
+            SELECT f.cliente_id FROM ${table.factura} f
+            WHERE LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+            AND f.estado_pago IN ('pendiente', 'vencido')
+            GROUP BY f.cliente_id
+            HAVING COUNT(*) >= 2
+          )
+          ORDER BY c.nombre_cliente
+        `;
+        break;
+      case "suspendido":
+        // Clientes suspendidos
+        query = `
+          SELECT c.kit, c.nombre_cliente
+          FROM ${table.cliente} c
+          WHERE c.activo = true AND c.estado_pago = 'suspendido'
+          ORDER BY c.nombre_cliente
+        `;
+        break;
+      case "pendientesFacturar":
+        // Clientes sin factura en el periodo (excluyendo estados especiales)
+        query = `
+          SELECT DISTINCT c.kit, c.nombre_cliente
+          FROM ${table.cliente} c
+          WHERE c.activo = true
+          AND c.estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida')
+          AND c.id NOT IN (
+            SELECT DISTINCT f.cliente_id FROM ${table.factura} f
+            WHERE LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+          )
+          ORDER BY c.nombre_cliente
+        `;
+        break;
+      default:
+        return [];
+    }
+
+    const result = await pool.query(query, params);
+    return result.rows;
   }
 
   async findAllForExport(table = TABLAS.PRINCIPAL) {

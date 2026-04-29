@@ -104,6 +104,11 @@ class ClientesService {
     return clientesRepository.getEstadisticasInformes(table, { periodo, anio });
   }
 
+  async obtenerDetalleInforme(sede = "principal", { periodo, anio, tipo } = {}) {
+    const table = sede === "fusagasuga" ? TABLAS.FUSAGASUGA : TABLAS.PRINCIPAL;
+    return clientesRepository.getDetalleInforme(table, { periodo, anio, tipo });
+  }
+
   async recalcularEstados(sede = "principal") {
     const table = sede === "fusagasuga" ? TABLAS.FUSAGASUGA : TABLAS.PRINCIPAL;
 

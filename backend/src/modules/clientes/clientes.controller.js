@@ -102,6 +102,16 @@ class ClientesController {
     }
   }
 
+  async detalleInforme(req, res, next) {
+    try {
+      const { periodo, anio, tipo } = req.query;
+      const clientes = await clientesService.obtenerDetalleInforme(req.sede, { periodo, anio, tipo });
+      res.json(clientes);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async recalcularEstados(req, res, next) {
     try {
       const result = await clientesService.recalcularEstados(req.sede);

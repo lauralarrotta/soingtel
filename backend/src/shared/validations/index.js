@@ -76,8 +76,9 @@ function validarCrearFactura(data) {
 function validarActualizarFactura(data) {
   const errores = [];
 
-  if (data.numero !== undefined && (isNaN(Number(data.numero)) || Number(data.numero) <= 0)) {
-    errores.push("El número de factura debe ser un número positivo");
+  // El número de factura puede ser un string (ej: "SOG-2024-001") o un número
+  if (data.numero !== undefined && String(data.numero).trim() === "") {
+    errores.push("El número de factura es obligatorio");
   }
 
   if (data.fecha) {
