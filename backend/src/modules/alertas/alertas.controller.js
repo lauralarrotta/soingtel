@@ -99,6 +99,69 @@ class AlertasController {
       next(error);
     }
   }
+
+  async listarClienteIncompleto(req, res, next) {
+    try {
+      const result = await alertasService.listarClienteIncompleto();
+      res.json({ alertas_cliente_incompleto: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async actualizarClienteIncompleto(req, res, next) {
+    try {
+      const result = await alertasService.actualizarClienteIncompleto(req.body);
+      res.json({ alertas_cliente_incompleto: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async crearClienteIncompleto(req, res, next) {
+    try {
+      const result = await alertasService.crearClienteIncompleto(req.body);
+      res.status(201).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async listarNuevoCliente(req, res, next) {
+    try {
+      const result = await alertasService.listarNuevoCliente();
+      res.json({ alertas_nuevo_cliente: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async actualizarNuevoCliente(req, res, next) {
+    try {
+      const result = await alertasService.actualizarNuevoCliente(req.body);
+      res.json({ alertas_nuevo_cliente: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async crearNuevoCliente(req, res, next) {
+    try {
+      const result = await alertasService.crearNuevoCliente(req.body);
+      res.status(201).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async eliminarNuevoCliente(req, res, next) {
+    try {
+      const result = await alertasService.eliminarNuevoCliente(req.params.id);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new AlertasController();

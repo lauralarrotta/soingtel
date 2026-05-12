@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 interface InformesPageProps {
   userType?: string;
@@ -48,6 +50,174 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
     return value;
   };
 
+  const exportarDetalleExcel = () => {
+    if (!detailData || detailData.length === 0) {
+      toast.error("No hay datos para exportar");
+      return;
+    }
+
+    // Prepare data for Excel - include all available fields from the API
+    const excelData = detailData.map((cliente) => ({
+      Kit: cliente.kit || '',
+      'Nombre Cliente': cliente.nombre_cliente || '',
+      'Número Factura': cliente.numero || '',
+      Fecha: cliente.fecha ? new Date(cliente.fecha).toLocaleDateString() : '',
+      'Estado Pago': cliente.estado_pago || '',
+      Periodo: cliente.periodo || '',
+      Año: cliente.anio || '',
+    }));
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Auto-adjust column widths
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      let maxWidth = 10;
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        const cellAddress = { c: C, r: R };
+        const cellRef = XLSX.utils.encode_cell(cellAddress);
+        const cell = ws[cellRef];
+        if (cell && cell.v) {
+          const text = String(cell.v);
+          if (text.length > maxWidth) maxWidth = text.length;
+        }
+      }
+      ws['!cols'] = ws['!cols'] || [];
+      ws['!cols'][C] = { wch: maxWidth + 2 };
+    }
+
+    // Add some styling
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Detalle Informe');
+
+    // Generate Excel file
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+    // Create blob and download
+    const data = new Blob([excelBuffer], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'});
+    // Clean filename to remove invalid characters
+    const cleanDetailTitle = detailTitle.replace(/[^a-zA-Z0-9]/g, '_');
+    const fileName = `Informe_${cleanDetailTitle}_${periodo}_${anio}.xlsx`;
+
+    // Create link and trigger download
+    const url = window.URL.createObjectURL(data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    toast.success(`Exportado a Excel: ${fileName}`);
+  };
+
+  const exportarEstadisticasExcel = () => {
+    if (!stats) {
+      toast.error("No hay estadísticas para exportar");
+      return;
+    }
+
+    // Prepare data for Excel - statistics summary
+    const excelData = [
+      {
+        Métrica: "Facturados",
+        Valor: stats.facturado,
+        Descripción: "Con factura generada en el periodo"
+      },
+      {
+        Métrica: "Pagados",
+        Valor: stats.pagados,
+        Descripción: "Ya pagaron en el periodo"
+      },
+      {
+        Métrica: "Pendientes",
+        Valor: stats.pendientes,
+        Descripción: "Factura pendiente en el periodo"
+      },
+      {
+        Métrica: "PPC",
+        Valor: stats.ppc,
+        Descripción: "Pausa por pago en el periodo"
+      },
+      {
+        Métrica: "ROC",
+        Valor: stats.roc,
+        Descripción: "Reclamación en el periodo"
+      },
+      {
+        Métrica: "x Facturar",
+        Valor: stats.pendientesFacturar,
+        Descripción: "Sin factura en el periodo"
+      },
+      {
+        Métrica: "En Mora",
+        Valor: stats.enMora,
+        Descripción: "2+ facturas vencidas/pendientes del periodo"
+      },
+      {
+        Métrica: "Suspendidos",
+        Valor: stats.suspendido,
+        Descripción: "Clientes suspendidos"
+      }
+    ];
+
+    // Add sinFacturas if it exists
+    if (stats.sinFacturas !== undefined) {
+      excelData.push({
+        Métrica: "Sin Facturas",
+        Valor: stats.sinFacturas ? "Sí" : "No",
+        Descripción: "Indica si hay facturas en el periodo"
+      });
+    }
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Auto-adjust column widths
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      let maxWidth = 10;
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        const cellAddress = { c: C, r: R };
+        const cellRef = XLSX.utils.encode_cell(cellAddress);
+        const cell = ws[cellRef];
+        if (cell && cell.v) {
+          const text = String(cell.v);
+          if (text.length > maxWidth) maxWidth = text.length;
+        }
+      }
+      ws['!cols'] = ws['!cols'] || [];
+      ws['!cols'][C] = { wch: maxWidth + 2 };
+    }
+
+    // Add some styling
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Estadisticas Informes');
+
+    // Generate Excel file
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+    // Create blob and download
+    const data = new Blob([excelBuffer], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'});
+    // Clean filename to remove invalid characters
+    const cleanPeriodo = periodo.replace(/[^a-zA-Z0-9]/g, '_');
+    const fileName = `Estadisticas_Informe_${cleanPeriodo}_${anio}.xlsx`;
+
+    // Create link and trigger download
+    const url = window.URL.createObjectURL(data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    toast.success(`Exportado a Excel: ${fileName}`);
+  };
+
   const buscarInformes = async () => {
     setLoading(true);
     setHasSearched(true);
@@ -56,6 +226,8 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       setStats(data);
     } catch (error) {
       console.error("Error cargando informes:", error);
+      toast.error("Error al cargar los informes. Por favor, inténtelo de nuevo.");
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -177,8 +349,18 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
     <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
+        <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-black">Informes por Periodo</h2>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={exportarEstadisticasExcel}
+            disabled={loading || !stats}
+          >
+            <FileText className="h-4 w-4" />
+          </Button>
+        </div>
+        <div>
           <p className="text-sm text-cyan-400/70">
             Estadísticas de facturación del sistema
           </p>
@@ -277,8 +459,16 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
       {/* Modal de Detalle */}
       <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
         <DialogContent className="!max-w-[95vw] !w-[95vw] h-[85vh] overflow-hidden flex flex-col p-6">
-          <DialogHeader>
-            <DialogTitle className="text-xl mb-4">{detailTitle} - {PERIODOS_DISPLAY[periodo] || periodo} {anio}</DialogTitle>
+          <DialogHeader className="flex items-center justify-between mb-4">
+            <DialogTitle className="text-xl">{detailTitle} - {PERIODOS_DISPLAY[periodo] || periodo} {anio}</DialogTitle>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={exportarDetalleExcel}
+              disabled={detailLoading || !detailData || detailData.length === 0}
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
           </DialogHeader>
           {detailLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -292,15 +482,45 @@ export function InformesPage({ userType = "admin" }: InformesPageProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Kit</TableHead>
-                      <TableHead>Cliente</TableHead>
+                      {!['suspendido', 'pendientesFacturar'].includes(detailType) && (
+                        <>
+                          <TableHead>Kit</TableHead>
+                          <TableHead>Cliente</TableHead>
+                          <TableHead>Número Factura</TableHead>
+                          <TableHead>Fecha</TableHead>
+                          <TableHead>Estado Pago</TableHead>
+                          <TableHead>Periodo</TableHead>
+                          <TableHead>Año</TableHead>
+                        </>
+                      )}
+                      {['suspendido', 'pendientesFacturar'].includes(detailType) && (
+                        <>
+                          <TableHead>Kit</TableHead>
+                          <TableHead>Cliente</TableHead>
+                        </>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {detailData.map((cliente) => (
                       <TableRow key={cliente.kit}>
-                        <TableCell className="font-mono">{cliente.kit}</TableCell>
-                        <TableCell>{cliente.nombre_cliente}</TableCell>
+                        {!['suspendido', 'pendientesFacturar'].includes(detailType) && (
+                          <>
+                            <TableCell className="font-mono">{cliente.kit}</TableCell>
+                            <TableCell>{cliente.nombre_cliente}</TableCell>
+                            <TableCell>{cliente.numero || ''}</TableCell>
+                            <TableCell>{cliente.fecha ? new Date(cliente.fecha).toLocaleDateString() : ''}</TableCell>
+                            <TableCell>{cliente.estado_pago || ''}</TableCell>
+                            <TableCell>{cliente.periodo || ''}</TableCell>
+                            <TableCell>{cliente.anio || ''}</TableCell>
+                          </>
+                        )}
+                        {['suspendido', 'pendientesFacturar'].includes(detailType) && (
+                          <>
+                            <TableCell className="font-mono">{cliente.kit}</TableCell>
+                            <TableCell>{cliente.nombre_cliente}</TableCell>
+                          </>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

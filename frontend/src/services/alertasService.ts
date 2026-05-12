@@ -27,6 +27,14 @@ export interface AlertaReactivacionPayload extends AlertaFacturacionPayload {
   metodoPago: string;
 }
 
+export interface AlertaClienteIncompletoPayload extends AlertaFacturacionPayload {
+  camposFaltantes: string;
+}
+
+export interface AlertaNuevoClientePayload extends AlertaFacturacionPayload {
+  creadoPor: string;
+}
+
 export const alertasService = {
   obtenerSuspension: async () => {
     const res = await fetchWithRetry(api.alertasSuspension(), { headers: getHeaders() });
@@ -99,6 +107,69 @@ export const alertasService = {
       }),
     });
     if (!res.ok) throw new Error("Error creando alerta");
+    return res.json();
+  },
+
+  // Cliente incompleto
+  obtenerClienteIncompleto: async () => {
+    const res = await fetchWithRetry(api.alertasClienteIncompleto(), { headers: getHeaders() });
+    if (!res.ok && res.status !== 401) throw new Error("Error cargando alertas de cliente incompleto");
+    return res.json();
+  },
+
+  actualizarClienteIncompleto: async (alertas: any[]) => {
+    const res = await fetchWithRetry(api.alertasClienteIncompleto(), {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ alertas_cliente_incompleto: alertas }),
+    });
+    if (!res.ok) throw new Error("Error actualizando alertas");
+    return res.json();
+  },
+
+  crearClienteIncompleto: async (payload: AlertaClienteIncompletoPayload) => {
+    const res = await fetchWithRetry(`${api.alertasClienteIncompleto()}/crear`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Error creando alerta");
+    return res.json();
+  },
+
+  // Nuevo cliente
+  obtenerNuevoCliente: async () => {
+    const res = await fetchWithRetry(api.alertasNuevoCliente(), { headers: getHeaders() });
+    if (!res.ok && res.status !== 401) throw new Error("Error cargando alertas de nuevo cliente");
+    return res.json();
+  },
+
+  actualizarNuevoCliente: async (alertas: any[]) => {
+    const res = await fetchWithRetry(api.alertasNuevoCliente(), {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ alertas_nuevo_cliente: alertas }),
+    });
+    if (!res.ok) throw new Error("Error actualizando alertas");
+    return res.json();
+  },
+
+  crearNuevoCliente: async (payload: AlertaNuevoClientePayload) => {
+    const res = await fetchWithRetry(`${api.alertasNuevoCliente()}/crear`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Error creando alerta");
+    return res.json();
+  },
+
+  eliminarNuevoCliente: async (id: string) => {
+    const res = await fetchWithRetry(`${api.alertasNuevoCliente()}/${id}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error eliminando alerta");
     return res.json();
   },
 };

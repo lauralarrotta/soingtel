@@ -43,12 +43,23 @@ export function useLocalPostgres<T>(
     return unsubscribe;
   }, []);
 
-  // Función para convertir datos del servidor (snake_case -> camelCase)
+  // Función para convertir datos del servidor (snake_case -> camelCase) y asegurar campos requeridos
   const convertServerData = useCallback((serverData: any[]): any[] => {
     if (!Array.isArray(serverData)) return serverData;
+    // Only apply transformation for clientes
+    if (key !== "clientes" && key !== "clientes_fusagasuga") {
+      return serverData;
+    }
     return serverData.map((c: any) => ({
       ...c,
-      nombrecliente: c.nombre_cliente,
+      // Ensure required fields are present and of correct type
+      kit: c.kit?.trim() || `KIT-${Math.floor(Math.random() * 100000)}`,
+      nombrecliente: c.nombre_cliente || c.nombrecliente || '',
+      cuenta: c.cuenta || '',
+      email: c.email || '',
+      corte: c.corte !== undefined && c.corte !== null ? Number(c.corte) : 0,
+      estado_pago: c.estado_pago || 'pendiente',
+      // Map the existing fields as before (snake_case to camelCase)
       cuentastarlink: c.cuenta_starlink,
       costoplan: c.costo_plan,
       valorFactura: c.valor_factura,
@@ -56,7 +67,7 @@ export function useLocalPostgres<T>(
       fechaActivacion: c.fecha_activacion,
       tipoSoporte: c.tipo_soporte,
     }));
-  }, []);
+  }, [key]);
 
   // Función para obtener URL con filtros
   const buildUrl = useCallback(() => {

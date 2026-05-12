@@ -185,28 +185,30 @@ class ClientesRepository {
   async getEstadisticas(table = TABLAS.PRINCIPAL) {
     const [total, ppc, danadas, susp, gar, trans, totalFacturas, pagadas, pendientes, vencidas, clientesEnMora] = await Promise.all([
       // Total activos = todos menos en_dano, transferencia, garantia
-      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago NOT IN ('en_dano', 'transferida', 'garantia')`),
-      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND (estado_facturacion = 'PPC' OR estado_pago = 'ppc')`),
-      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'en_dano'`),
-      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'suspendido'`),
-      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'garantia'`),
-      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND estado_pago = 'transferida'`),
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND LOWER(estado_pago) NOT IN ('en_dano', 'transferida', 'garantia')`),
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND (LOWER(estado_facturacion) = 'ppc' OR LOWER(estado_pago) = 'ppc')`),
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND LOWER(estado_pago) = 'en_dano'`),
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND LOWER(estado_pago) = 'suspendido'`),
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND LOWER(estado_pago) = 'garantia'`),
+      pool.query(`SELECT COUNT(*) FROM ${table.cliente} WHERE activo = true AND LOWER(estado_pago) = 'transferida'`),
       // Total facturas
       pool.query(`SELECT COUNT(*) FROM ${table.factura} f JOIN ${table.cliente} c ON c.id = f.cliente_id WHERE c.activo = true`),
       // Facturas pagadas
-      pool.query(`SELECT COUNT(*) FROM ${table.factura} f JOIN ${table.cliente} c ON c.id = f.cliente_id WHERE c.activo = true AND f.estado_pago = 'pagado'`),
+      pool.query(`SELECT COUNT(*) FROM ${table.factura} f JOIN ${table.cliente} c ON c.id = f.cliente_id WHERE c.activo = true AND LOWER(f.estado_pago) = 'pagado'`),
       // Facturas pendientes
-      pool.query(`SELECT COUNT(*) FROM ${table.factura} f JOIN ${table.cliente} c ON c.id = f.cliente_id WHERE c.activo = true AND f.estado_pago = 'pendiente'`),
+      pool.query(`SELECT COUNT(*) FROM ${table.factura} f JOIN ${table.cliente} c ON c.id = f.cliente_id WHERE c.activo = true AND LOWER(f.estado_pago) = 'pendiente'`),
       // Facturas vencidas
-      pool.query(`SELECT COUNT(*) FROM ${table.factura} f JOIN ${table.cliente} c ON c.id = f.cliente_id WHERE c.activo = true AND f.estado_pago = 'vencido'`),
-      // Clientes en mora (3+ facturas pendientes - "mas de dos")
+      pool.query(`SELECT COUNT(*) FROM ${table.factura} f JOIN ${table.cliente} c ON c.id = f.cliente_id WHERE c.activo = true AND LOWER(f.estado_pago) = 'vencido'`),
+      // Clientes en mora (2+ facturas pendientes/vencidas - "mas de uno")
       pool.query(`
         SELECT COUNT(*) FROM (
-          SELECT c.id FROM ${table.factura} f
+          SELECT f.cliente_id
+          FROM ${table.factura} f
           JOIN ${table.cliente} c ON c.id = f.cliente_id
-          WHERE c.activo = true AND c.estado_pago != 'suspendido' AND f.estado_pago = 'pendiente'
-          GROUP BY c.id
-          HAVING COUNT(*) > 2
+          WHERE c.activo = true
+          AND LOWER(f.estado_pago) IN ('pendiente', 'vencido')
+          GROUP BY f.cliente_id
+          HAVING COUNT(*) >= 2
         ) AS clientes_mora
       `),
     ]);
@@ -258,55 +260,54 @@ class ClientesRepository {
         SELECT COUNT(*) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
-        WHERE c.activo = true AND f.estado_pago = 'pagado' AND ${facturaWhere}
+        WHERE c.activo = true AND LOWER(f.estado_pago) = 'pagado' AND ${facturaWhere}
       `, facturaParams),
       // Facturas PENDIENTES en ese periodo
       pool.query(`
         SELECT COUNT(*) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
-        WHERE c.activo = true AND f.estado_pago = 'pendiente' AND ${facturaWhere}
+        WHERE c.activo = true AND LOWER(f.estado_pago) = 'pendiente' AND ${facturaWhere}
       `, facturaParams),
       // Facturas VENCIDAS en ese periodo
       pool.query(`
         SELECT COUNT(*) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
-        WHERE c.activo = true AND f.estado_pago = 'vencido' AND ${facturaWhere}
+        WHERE c.activo = true AND LOWER(f.estado_pago) = 'vencido' AND ${facturaWhere}
       `, facturaParams),
       // Facturas PPC en ese periodo
       pool.query(`
         SELECT COUNT(*) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
-        WHERE c.activo = true AND f.estado_pago = 'ppc' AND ${facturaWhere}
+        WHERE c.activo = true AND LOWER(f.estado_pago) = 'ppc' AND ${facturaWhere}
       `, facturaParams),
       // Facturas ROC en ese periodo
       pool.query(`
         SELECT COUNT(*) as count
         FROM ${table.factura} f
         JOIN ${table.cliente} c ON c.id = f.cliente_id
-        WHERE c.activo = true AND f.estado_pago = 'roc' AND ${facturaWhere}
+        WHERE c.activo = true AND LOWER(f.estado_pago) = 'roc' AND ${facturaWhere}
       `, facturaParams),
       // Clientes SUSPENDIDOS (estado_pago del cliente)
       pool.query(`
         SELECT COUNT(DISTINCT c.id) as count
         FROM ${table.cliente} c
-        WHERE c.activo = true AND c.estado_pago = 'suspendido'
+        WHERE c.activo = true AND LOWER(c.estado_pago) = 'suspendido'
       `),
-      // Clientes en MORA en ese periodo (2+ facturas pendientes/vencidas del periodo)
+      // Clientes en MORA (2+ facturas pendientes/vencidas en total, sin importar periodo)
       pool.query(`
         SELECT COUNT(*) as count FROM (
           SELECT f.cliente_id
           FROM ${table.factura} f
           JOIN ${table.cliente} c ON c.id = f.cliente_id
           WHERE c.activo = true
-          AND f.estado_pago IN ('pendiente', 'vencido')
-          AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+          AND LOWER(f.estado_pago) IN ('pendiente', 'vencido')
           GROUP BY f.cliente_id
           HAVING COUNT(*) >= 2
         ) sub
-      `, facturaParams),
+      `),
       // Clientes SIN factura en ese periodo (excluyendo estados especiales)
       pool.query(`
         SELECT COUNT(DISTINCT c.id) as count
@@ -320,10 +321,10 @@ class ClientesRepository {
       `, facturaParams),
     ]);
 
-    const hayFacturasEnPeriodo = parseInt(facturados.rows[0].count) > 0;
+    const facturadoCount = parseInt(facturados.rows[0].count);
 
     return {
-      facturado: hayFacturasEnPeriodo ? parseInt(facturados.rows[0].count) : parseInt(pendientesFacturar.rows[0].count),
+      facturado: facturadoCount,
       pagados: parseInt(pagadas.rows[0].count),
       pendientes: parseInt(pendientes.rows[0].count),
       vencidos: parseInt(vencidas.rows[0].count),
@@ -332,7 +333,7 @@ class ClientesRepository {
       suspendido: parseInt(suspendido.rows[0].count),
       enMora: parseInt(enMoraPeriodo.rows[0].count),
       pendientesFacturar: parseInt(pendientesFacturar.rows[0].count),
-      sinFacturas: !hayFacturasEnPeriodo,
+      sinFacturas: facturadoCount === 0,
     };
   }
 
@@ -342,90 +343,96 @@ class ClientesRepository {
 
     switch (tipo) {
       case "facturado":
-        // Clientes con factura en el periodo
+        // Facturas en el periodo
         query = `
-          SELECT DISTINCT c.kit, c.nombre_cliente
+          SELECT c.kit, c.nombre_cliente, f.numero, f.fecha, f.estado_pago, f.periodo, f.anio
           FROM ${table.cliente} c
           JOIN ${table.factura} f ON f.cliente_id = c.id
           WHERE c.activo = true AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
-          ORDER BY c.nombre_cliente
+          ORDER BY c.nombre_cliente, f.fecha
         `;
         break;
       case "pagado":
-        // Clientes con factura pagada en el periodo
+        // Facturas pagadas en el periodo
         query = `
-          SELECT DISTINCT c.kit, c.nombre_cliente
+          SELECT c.kit, c.nombre_cliente, f.numero, f.fecha, f.estado_pago, f.periodo, f.anio
           FROM ${table.cliente} c
           JOIN ${table.factura} f ON f.cliente_id = c.id
-          WHERE c.activo = true AND f.estado_pago = 'pagado' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
-          ORDER BY c.nombre_cliente
+          WHERE c.activo = true AND LOWER(f.estado_pago) = 'pagado' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+          ORDER BY c.nombre_cliente, f.fecha
         `;
         break;
       case "pendiente":
-        // Clientes con factura pendiente en el periodo
+        // Facturas pendientes en el periodo
         query = `
-          SELECT DISTINCT c.kit, c.nombre_cliente
+          SELECT c.kit, c.nombre_cliente, f.numero, f.fecha, f.estado_pago, f.periodo, f.anio
           FROM ${table.cliente} c
           JOIN ${table.factura} f ON f.cliente_id = c.id
-          WHERE c.activo = true AND f.estado_pago = 'pendiente' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
-          ORDER BY c.nombre_cliente
+          WHERE c.activo = true AND LOWER(f.estado_pago) = 'pendiente' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+          ORDER BY c.nombre_cliente, f.fecha
         `;
         break;
       case "ppc":
-        // Clientes con factura PPC en el periodo
+        // Facturas PPC en el periodo
         query = `
-          SELECT DISTINCT c.kit, c.nombre_cliente
+          SELECT c.kit, c.nombre_cliente, f.numero, f.fecha, f.estado_pago, f.periodo, f.anio
           FROM ${table.cliente} c
           JOIN ${table.factura} f ON f.cliente_id = c.id
-          WHERE c.activo = true AND f.estado_pago = 'ppc' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
-          ORDER BY c.nombre_cliente
+          WHERE c.activo = true AND LOWER(f.estado_pago) = 'ppc' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+          ORDER BY c.nombre_cliente, f.fecha
         `;
         break;
       case "roc":
-        // Clientes con factura ROC en el periodo
+        // Facturas ROC en el periodo
         query = `
-          SELECT DISTINCT c.kit, c.nombre_cliente
+          SELECT c.kit, c.nombre_cliente, f.numero, f.fecha, f.estado_pago, f.periodo, f.anio
           FROM ${table.cliente} c
           JOIN ${table.factura} f ON f.cliente_id = c.id
-          WHERE c.activo = true AND f.estado_pago = 'roc' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
-          ORDER BY c.nombre_cliente
+          WHERE c.activo = true AND LOWER(f.estado_pago) = 'roc' AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+          ORDER BY c.nombre_cliente, f.fecha
         `;
         break;
       case "enMora":
-        // Clientes en mora (2+ facturas pendientes/vencidas en el periodo)
+        // Facturas pendientes/vencidas del periodo para clientes en mora (2+ facturas pendientes/vencidas en total)
         query = `
-          SELECT c.kit, c.nombre_cliente
+          SELECT c.kit, c.nombre_cliente, f.numero, f.fecha, f.estado_pago, f.periodo, f.anio
           FROM ${table.cliente} c
-          WHERE c.activo = true AND c.id IN (
-            SELECT f.cliente_id FROM ${table.factura} f
-            WHERE LOWER(f.periodo) = LOWER($1) AND f.anio = $2
-            AND f.estado_pago IN ('pendiente', 'vencido')
-            GROUP BY f.cliente_id
-            HAVING COUNT(*) >= 2
-          )
-          ORDER BY c.nombre_cliente
+          JOIN ${table.factura} f ON f.cliente_id = c.id
+          WHERE c.activo = true
+            AND LOWER(f.periodo) = LOWER($1) AND f.anio = $2
+            AND LOWER(f.estado_pago) IN ('pendiente', 'vencido')
+            AND c.id IN (
+              SELECT f2.cliente_id
+              FROM ${table.factura} f2
+              JOIN ${table.cliente} c2 ON c2.id = f2.cliente_id
+              WHERE c2.activo = true
+              AND LOWER(f2.estado_pago) IN ('pendiente', 'vencido')
+              GROUP BY f2.cliente_id
+              HAVING COUNT(*) >= 2
+            )
+          ORDER BY c.nombre_cliente, f.fecha
         `;
         break;
       case "suspendido":
-        // Clientes suspendidos
+        // Clientes suspendidos (sin facturas)
         query = `
-          SELECT c.kit, c.nombre_cliente
+          SELECT c.kit, c.nombre_cliente, NULL::text as numero, NULL::date as fecha, NULL::text as estado_pago, NULL::text as periodo, NULL::integer as anio
           FROM ${table.cliente} c
-          WHERE c.activo = true AND c.estado_pago = 'suspendido'
+          WHERE c.activo = true AND c.estado_pago = 'suspendido' AND $1 = $1 AND $2 = $2
           ORDER BY c.nombre_cliente
         `;
         break;
       case "pendientesFacturar":
         // Clientes sin factura en el periodo (excluyendo estados especiales)
         query = `
-          SELECT DISTINCT c.kit, c.nombre_cliente
+          SELECT c.kit, c.nombre_cliente, NULL::text as numero, NULL::date as fecha, NULL::text as estado_pago, NULL::text as periodo, NULL::integer as anio
           FROM ${table.cliente} c
           WHERE c.activo = true
-          AND c.estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida')
-          AND c.id NOT IN (
-            SELECT DISTINCT f.cliente_id FROM ${table.factura} f
-            WHERE LOWER(f.periodo) = LOWER($1) AND f.anio = $2
-          )
+            AND c.estado_pago NOT IN ('suspendido', 'en_dano', 'ppc', 'roc', 'garantia', 'transferida')
+            AND c.id NOT IN (
+              SELECT DISTINCT f.cliente_id FROM ${table.factura} f
+              WHERE LOWER(f.periodo) = LOWER($1) AND COALESCE(f.anio, 0) = COALESCE($2, 0)
+            )
           ORDER BY c.nombre_cliente
         `;
         break;

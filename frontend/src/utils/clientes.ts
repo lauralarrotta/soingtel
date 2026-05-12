@@ -14,7 +14,7 @@ export const calcularEstadoCliente = (cliente: Cliente) => {
 
   const pendientes = cliente.facturas.filter(
     (f: Factura) =>
-      f.estadoPago === "pendiente" || f.estadoPago === "vencido"
+      f.estadoPago?.toLowerCase() === "pendiente"
   ).length;
 
   if (pendientes >= 2) return "mora";

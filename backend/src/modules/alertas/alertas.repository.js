@@ -9,11 +9,14 @@ class AlertasRepository {
   }
 
   async update(tabla, id, data) {
-    const keys = Object.keys(data);
+    const filteredData = { ...data };
+    delete filteredData.id; // No actualizar el id
+    const keys = Object.keys(filteredData);
+    if (keys.length === 0) return null;
     const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
     const result = await pool.query(
       `UPDATE ${tabla} SET ${setClause} WHERE id = $${keys.length + 1} RETURNING *`,
-      [...Object.values(data), id]
+      [...Object.values(filteredData), id]
     );
     return result.rows[0];
   }

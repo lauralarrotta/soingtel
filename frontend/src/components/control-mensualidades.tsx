@@ -111,6 +111,11 @@ export function ControlMensualidades({
     suspendidas: 0,
     garantias: 0,
     transferidas: 0,
+    totalFacturas: 0,
+    facturasPagadas: 0,
+    facturasPendientes: 0,
+    facturasVencidas: 0,
+    clientesEnMora: 0,
   });
 
 
@@ -207,21 +212,84 @@ const recalcularEstadosClientes = async () => {
     }
   }, [clienteParaFacturar, clientes]);
 
+  // Validar campos obligatorios del cliente (excepto observaciones)
+  const validarClienteCompleto = (cliente: any): string[] => {
+    const camposFaltantes: string[] = [];
+
+    if (!cliente.nombrecliente) camposFaltantes.push("nombrecliente");
+    if (!cliente.cuentastarlink && !cliente.cuenta_starlink) camposFaltantes.push("cuentastarlink");
+    if (!cliente.email) camposFaltantes.push("email");
+    if (!cliente.cuenta) camposFaltantes.push("cuenta");
+    if (!cliente.corte) camposFaltantes.push("corte");
+    if (!cliente.fechaActivacion && !cliente.fecha_activacion) camposFaltantes.push("fechaActivacion");
+    if (!cliente.costoplan && !cliente.costo) camposFaltantes.push("costo");
+
+    return camposFaltantes;
+  };
+
   const handleNuevoCliente = async (cliente: Cliente) => {
     try {
+      // Crear el cliente primero
       await crearCliente(cliente);
 
-      if (userType === "soporte" || userType === "admin") {
-        // Guardar alerta en el backend para compartir entre usuarios
+      // Validar campos obligatorios DESPUÉS de crear
+      const camposFaltantes = validarClienteCompleto(cliente);
+
+      if (userType === "soporte") {
+        // Soporte crea cliente → alerta a facturacion y admin (nuevo cliente)
         try {
-          await alertasService.crearFacturacion({
+          await alertasService.crearNuevoCliente({
             kit: cliente.kit,
             nombre: cliente.nombrecliente,
             cuenta: cliente.cuenta,
             email: cliente.email,
+            creadoPor: "soporte",
           });
         } catch (alertaErr) {
-          console.warn("No se pudo crear alerta en servidor:", alertaErr);
+          console.warn("No se pudo crear alerta de nuevo cliente:", alertaErr);
+        }
+
+        // Si faltan campos, alertar a facturacion y admin (cliente incompleto)
+        if (camposFaltantes.length > 0) {
+          try {
+            await alertasService.crearClienteIncompleto({
+              kit: cliente.kit,
+              nombre: cliente.nombrecliente,
+              cuenta: cliente.cuenta,
+              email: cliente.email,
+              camposFaltantes: camposFaltantes.join(", "),
+            });
+          } catch (alertaErr) {
+            console.warn("No se pudo crear alerta de cliente incompleto:", alertaErr);
+          }
+        }
+      } else if (userType === "admin") {
+        // Admin crea cliente → alerta a soporte y facturacion (nuevo cliente)
+        try {
+          await alertasService.crearNuevoCliente({
+            kit: cliente.kit,
+            nombre: cliente.nombrecliente,
+            cuenta: cliente.cuenta,
+            email: cliente.email,
+            creadoPor: "admin",
+          });
+        } catch (alertaErr) {
+          console.warn("No se pudo crear alerta de nuevo cliente:", alertaErr);
+        }
+
+        // Si faltan campos, alertar a facturacion (cliente incompleto)
+        if (camposFaltantes.length > 0) {
+          try {
+            await alertasService.crearClienteIncompleto({
+              kit: cliente.kit,
+              nombre: cliente.nombrecliente,
+              cuenta: cliente.cuenta,
+              email: cliente.email,
+              camposFaltantes: camposFaltantes.join(", "),
+            });
+          } catch (alertaErr) {
+            console.warn("No se pudo crear alerta de cliente incompleto:", alertaErr);
+          }
         }
       }
 
@@ -253,6 +321,12 @@ const recalcularEstadosClientes = async () => {
   try {
     const data = await facturasService.crear(kit, factura);
 
+    const clienteActualizado = {
+      ...(kit === selectedCliente?.kit ? selectedCliente : {}),
+      estado_facturacion: data.estado_facturacion ?? selectedCliente?.estado_facturacion,
+      facturas: [...(selectedCliente?.facturas || []), data.factura],
+    };
+
     setClientes((prev) =>
       prev.map((c) =>
         c.kit === kit
@@ -265,6 +339,16 @@ const recalcularEstadosClientes = async () => {
           : c
       )
     );
+
+    // Actualizar cliente seleccionado si es el mismo al que se le agregó la factura
+    if (kit === selectedCliente?.kit) {
+      const clienteActualizado = {
+        ...selectedCliente,
+        estado_facturacion: data.estado_facturacion ?? selectedCliente.estado_facturacion,
+        facturas: [...(selectedCliente.facturas || []), data.factura],
+      };
+      setSelectedCliente(clienteActualizado);
+    }
 
     toast.success(
       `Factura ${factura.numero} agregada como ${factura.estadoPago.toUpperCase()}`
@@ -481,10 +565,12 @@ const handleSaveClienteCompleto = async (
   }
 };
   const handleAbrirSuspension = () => {
-    // Encontrar el primer cliente en mora (exactamente 2 facturas vencidas)
+    // Encontrar el primer cliente en mora (2+ facturas pendientes/vencidas y no suspendido)
     const clienteEnMora = clientes.find((c) => {
-      const vencidas = contarFacturasVencidas(c);
-      return vencidas === 2 && c.estado_pago !== "suspendido";
+      const facturasPendientesOVencidas = c.facturas?.filter(
+        (f) => f.estadoPago?.toLowerCase() === "pendiente" || f.estadoPago?.toLowerCase() === "vencido"
+      ).length || 0;
+      return facturasPendientesOVencidas >= 2 && c.estado_pago?.toLowerCase() !== "suspendido";
     });
 
     if (clienteEnMora) {
@@ -536,17 +622,14 @@ const handleSaveClienteCompleto = async (
   const totalPages = Math.ceil(totalCount / 10);
 
   const suspendidosCount = clientes.filter(
-    (c) => c.estado_pago === "suspendido",
+    (c) => c.estado_pago?.toLowerCase() === "suspendido",
   ).length;
   const pendientesCount = clientes.filter(
-    (c) => c.estado_pago === "pendiente",
+    (c) => c.estado_pago?.toLowerCase() === "pendiente",
   ).length;
 
-  // Calcular clientes en mora (EXACTAMENTE 2 facturas vencidas y no suspendidos)
-  const clientesEnMora = clientes.filter((c) => {
-    const facturasVencidas = contarFacturasVencidas(c);
-    return facturasVencidas === 2 && c.estado_pago !== "suspendido";
-  }).length;
+  // Calcular clientes en mora (2+ facturas pendientes y no suspendidos)
+  const clientesEnMora = clientes.filter((c) => calcularEstadoCliente(c) === "mora").length;
 
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
@@ -629,11 +712,11 @@ const handleSaveClienteCompleto = async (
   };
 
   const handleFilterMora = () => {
-    // Filtrar clientes con exactamente 2 facturas vencidas
+    // Filtrar clientes con 2+ facturas pendientes/vencidas
     setShowOnlyMora(true);
     setFilterEstado("todos");
     toast.info(
-      "Mostrando clientes con exactamente 2 facturas vencidas (en mora)",
+      "Mostrando clientes con 2+ facturas pendientes/vencidas (en mora)",
     );
   };
 
@@ -647,10 +730,12 @@ const handleSaveClienteCompleto = async (
     const estadoCliente = calcularEstadoCliente(cliente);
 
     if (showOnlyMora) {
-      const vencidas =
-        cliente.facturas?.filter((f) => f.estadoPago === "vencido").length || 0;
+      const facturasPendientes =
+        cliente.facturas?.filter(
+          (f) => f.estadoPago?.toLowerCase() === "pendiente"
+        ).length || 0;
 
-      return vencidas === 2 && cliente.estado_pago !== "suspendido";
+      return facturasPendientes >= 2 && cliente.estado_pago?.toLowerCase() !== "suspendido";
     }
 
     if (filterEstado === "sin_factura") {
@@ -1170,7 +1255,7 @@ const handleSaveClienteCompleto = async (
 
                           {/* Botón Suspender para Facturación (Envía alerta) */}
                           {(userType === "facturacion" || userType === "admin") &&
-                            cliente.estado_pago !== "suspendido" && cliente.estado_pago !== "en_dano" &&
+                            cliente.estado_pago?.toLowerCase() !== "suspendido" && cliente.estado_pago?.toLowerCase() !== "en_dano" &&
                             calcularEstadoCliente(cliente) === "mora" && (
                               <Button
                                 variant="outline"
@@ -1188,7 +1273,7 @@ const handleSaveClienteCompleto = async (
 
                           {/* Botón Reactivar para Facturación (Envía alerta) */}
                           {(userType === "facturacion" || userType === "admin") &&
-                            cliente.estado_pago === "suspendido" && (
+                            cliente.estado_pago?.toLowerCase() === "suspendido" && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1205,7 +1290,7 @@ const handleSaveClienteCompleto = async (
 
                           {/* Botón En Daño para Soporte */}
                           {(userType === "soporte" || userType === "admin") &&
-                            cliente.estado_pago !== "en_dano" && (
+                            cliente.estado_pago?.toLowerCase() !== "en_dano" && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1229,7 +1314,7 @@ const handleSaveClienteCompleto = async (
 
                           {/* Botón Garantía para Soporte */}
                           {(userType === "soporte" || userType === "admin") &&
-                            cliente.estado_pago !== "garantia" && (
+                            cliente.estado_pago?.toLowerCase() !== "garantia" && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1253,7 +1338,7 @@ const handleSaveClienteCompleto = async (
 
                           {/* Botón Transferida para Soporte */}
                           {(userType === "soporte" || userType === "admin") &&
-                            cliente.estado_pago !== "transferida" && (
+                            cliente.estado_pago?.toLowerCase() !== "transferida" && (
                               <Button
                                 variant="outline"
                                 size="sm"

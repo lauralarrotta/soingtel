@@ -5,6 +5,8 @@ const TABLAS = {
   FACTURACION: "alertas_facturacion",
   SUSPENSION: "alertas_suspension",
   REACTIVACION: "alertas_reactivacion",
+  CLIENTE_INCOMPLETO: "alertas_cliente_incompleto",
+  NUEVO_CLIENTE: "alertas_nuevo_cliente",
 };
 
 class AlertasService {
@@ -176,6 +178,117 @@ class AlertasService {
 
   async eliminarReactivacion(id) {
     await alertasRepository.delete(TABLAS.REACTIVACION, id);
+    return { success: true };
+  }
+
+  // Cliente incompleto
+  async listarClienteIncompleto() {
+    return alertasRepository.findAll(TABLAS.CLIENTE_INCOMPLETO);
+  }
+
+  async actualizarClienteIncompleto({ alertas_cliente_incompleto }) {
+    if (!Array.isArray(alertas_cliente_incompleto)) {
+      throw new AppError("alertas_cliente_incompleto debe ser un array", 400);
+    }
+
+    for (const alerta of alertas_cliente_incompleto) {
+      if (alerta.id && typeof alerta.vista !== "boolean") {
+        throw new AppError(`El campo 'vista' debe ser booleano para alerta ${alerta.id}`, 400);
+      }
+    }
+
+    if (Array.isArray(alertas_cliente_incompleto)) {
+      for (const alerta of alertas_cliente_incompleto) {
+        if (alerta.id) {
+          await alertasRepository.update(TABLAS.CLIENTE_INCOMPLETO, alerta.id, {
+            vista: alerta.vista,
+          });
+        }
+      }
+    }
+    return this.listarClienteIncompleto();
+  }
+
+  async crearClienteIncompleto({ kit, nombre, cuenta, email, camposFaltantes, sede = "principal" }) {
+    let clienteId = null;
+    const tableName = sede === "fusagasuga" ? "fusagasuga" : "clientes";
+
+    try {
+      const pool = require("../../config/database");
+      const clienteResult = await pool.query(
+        `SELECT id FROM ${tableName} WHERE kit = $1`,
+        [kit]
+      );
+      if (clienteResult.rows.length > 0) {
+        clienteId = clienteResult.rows[0].id;
+      }
+    } catch (e) {}
+
+    return alertasRepository.create(TABLAS.CLIENTE_INCOMPLETO, {
+      cliente_id: clienteId,
+      cliente_kit: kit,
+      cliente_nombre: nombre,
+      sede,
+      mensaje: `Cliente con datos incompletos: ${nombre} (Kit: ${kit})`,
+      numero_factura: camposFaltantes,
+    });
+  }
+
+  // Nuevo cliente
+  async listarNuevoCliente() {
+    return alertasRepository.findAll(TABLAS.NUEVO_CLIENTE);
+  }
+
+  async actualizarNuevoCliente({ alertas_nuevo_cliente }) {
+    if (!Array.isArray(alertas_nuevo_cliente)) {
+      throw new AppError("alertas_nuevo_cliente debe ser un array", 400);
+    }
+
+    for (const alerta of alertas_nuevo_cliente) {
+      if (alerta.id && typeof alerta.vista !== "boolean") {
+        throw new AppError(`El campo 'vista' debe ser booleano para alerta ${alerta.id}`, 400);
+      }
+    }
+
+    if (Array.isArray(alertas_nuevo_cliente)) {
+      for (const alerta of alertas_nuevo_cliente) {
+        if (alerta.id) {
+          await alertasRepository.update(TABLAS.NUEVO_CLIENTE, alerta.id, {
+            vista: alerta.vista,
+          });
+        }
+      }
+    }
+    return this.listarNuevoCliente();
+  }
+
+  async crearNuevoCliente({ kit, nombre, cuenta, email, creadoPor, sede = "principal" }) {
+    let clienteId = null;
+    const tableName = sede === "fusagasuga" ? "fusagasuga" : "clientes";
+
+    try {
+      const pool = require("../../config/database");
+      const clienteResult = await pool.query(
+        `SELECT id FROM ${tableName} WHERE kit = $1`,
+        [kit]
+      );
+      if (clienteResult.rows.length > 0) {
+        clienteId = clienteResult.rows[0].id;
+      }
+    } catch (e) {}
+
+    return alertasRepository.create(TABLAS.NUEVO_CLIENTE, {
+      cliente_id: clienteId,
+      cliente_kit: kit,
+      cliente_nombre: nombre,
+      sede,
+      mensaje: `Nuevo cliente agregado por ${creadoPor}: ${nombre} (Kit: ${kit})`,
+      numero_factura: creadoPor,
+    });
+  }
+
+  async eliminarNuevoCliente(id) {
+    await alertasRepository.delete(TABLAS.NUEVO_CLIENTE, id);
     return { success: true };
   }
 }

@@ -15,6 +15,8 @@ export const api = {
   alertasSuspensionCrear: () => `${API_CONFIG.BASE_URL}/alertas_suspension/crear`,
   alertasReactivacion: () => `${API_CONFIG.BASE_URL}/alertas_reactivacion`,
   alertasReactivacionCrear: () => `${API_CONFIG.BASE_URL}/alertas_reactivacion/crear`,
+  alertasClienteIncompleto: () => `${API_CONFIG.BASE_URL}/alertas_cliente_incompleto`,
+  alertasNuevoCliente: () => `${API_CONFIG.BASE_URL}/alertas_nuevo_cliente`,
   health: () => `${API_CONFIG.BASE_URL}/health`,
   exportarSheets: () => `${API_CONFIG.BASE_URL}/exportar-sheets`,
 } as const;

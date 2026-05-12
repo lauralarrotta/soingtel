@@ -60,7 +60,7 @@ export function AlertsPanel({
           <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
           <AlertTitle className="text-yellow-700 dark:text-yellow-300">Pendientes</AlertTitle>
           <AlertDescription className="text-sm break-words text-yellow-600/80 dark:text-yellow-400/80">
-            {pendientesCount} clientes con factura vencida - Clic para filtrar
+            {pendientesCount} clientes con factura pendiente - Clic para filtrar
           </AlertDescription>
         </Alert>
       )}

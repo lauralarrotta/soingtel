@@ -13,5 +13,12 @@ router.get("/alertas_reactivacion", controller.listarReactivacion);
 router.post("/alertas_reactivacion", controller.actualizarReactivacion);
 router.post("/alertas_reactivacion/crear", controller.crearReactivacion);
 router.delete("/alertas_reactivacion/:id", controller.eliminarReactivacion);
+router.get("/alertas_cliente_incompleto", controller.listarClienteIncompleto);
+router.post("/alertas_cliente_incompleto", controller.actualizarClienteIncompleto);
+router.post("/alertas_cliente_incompleto/crear", controller.crearClienteIncompleto);
+router.get("/alertas_nuevo_cliente", controller.listarNuevoCliente);
+router.post("/alertas_nuevo_cliente", controller.actualizarNuevoCliente);
+router.post("/alertas_nuevo_cliente/crear", controller.crearNuevoCliente);
+router.delete("/alertas_nuevo_cliente/:id", controller.eliminarNuevoCliente);
 
 module.exports = router;

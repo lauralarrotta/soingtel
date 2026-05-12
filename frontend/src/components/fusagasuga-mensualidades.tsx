@@ -177,7 +177,7 @@ export function FusagasugaMensualidades({
     }
 
     const pendientes = cliente.facturas.filter(
-      (f) => f.estadoPago === "pendiente" || f.estadoPago === "vencido"
+      (f) => f.estadoPago === "pendiente"
     ).length;
 
     if (pendientes >= 2) return "mora";
@@ -652,8 +652,8 @@ export function FusagasugaMensualidades({
     (c) => c.estado_pago === "pendiente",
   ).length;
 
-  // Usar clientesEnMora del backend (estadisticas)
-  const clientesEnMora = estadisticas.clientesEnMora || 0;
+  // Calcular clientes en mora en el frontend (excluyendo vencido, PPC, garantia, en_dano, etc.)
+  const clientesEnMoraFrontend = clientes.filter((c) => calcularEstadoCliente(c) === "mora").length;
 
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
@@ -757,7 +757,7 @@ export function FusagasugaMensualidades({
       <AlertsPanel
         moraCount={suspendidosCount}
         pendientesCount={pendientesCount}
-        clientesEnMora={clientesEnMora}
+        clientesEnMora={clientesEnMoraFrontend}
         onFilterSuspendidos={handleFilterSuspendidos}
         onFilterPendientes={handleFilterPendientes}
         onFilterMora={handleFilterMora}
