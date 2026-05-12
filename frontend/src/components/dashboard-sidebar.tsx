@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { BarChart3, PanelLeftClose, PanelLeftOpen, FileText, Settings } from "lucide-react";
+import { BarChart3, PanelLeftClose, PanelLeftOpen, FileText, Settings, ClipboardList } from "lucide-react";
 import { cn } from "./ui/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -34,6 +34,13 @@ export default function DashboardSidebar({
       icon: BarChart3,
       roles: ["facturacion", "soporte", "admin"],
       path: "/fusagasuga",
+    },
+    {
+      id: "solicitudes",
+      label: "Solicitudes Comerciales",
+      icon: ClipboardList,
+      roles: ["comercial", "facturacion", "soporte", "admin"],
+      path: "/solicitudes",
     },
     {
       id: "informes",

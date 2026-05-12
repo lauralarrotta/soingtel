@@ -11,7 +11,7 @@ import { AlertasSuspensionModal } from "./components/alertas-suspension-modal";
 import { AlertasReactivacionModal } from "./components/alertas-reactivacion-modal";
 import { PlaceholderSection } from "./components/placeholder-section";
 import { InformesPage } from "./features/informes/pages/InformesPage";
-import { Users, Activity, FileText, Settings } from "lucide-react";
+import { Users, Activity, FileText, Settings, ClipboardList } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { SECTIONS } from "./constants/navigation";
@@ -25,6 +25,7 @@ const ROUTES = {
   SEMAFORIZACION: "/semaforizacion",
   REPORTES: "/reportes",
   CONFIGURACION: "/configuracion",
+  SOLICITUDES: "/solicitudes",
 } as const;
 
 function ProtectedRoute({ children, userType }: { children: React.ReactNode; userType: string }) {
@@ -260,6 +261,21 @@ export default function App() {
                   title="Clientes"
                   description="Esta sección mostrará el listado completo de clientes con sus detalles y historial."
                   icon={<Users className="h-16 w-16" />}
+                />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path={ROUTES.SOLICITUDES}
+          element={
+            <ProtectedRoute userType={userType}>
+              <DashboardLayout {...dashboardProps}>
+                <PlaceholderSection
+                  title="Solicitudes Comerciales"
+                  description="Gestión de solicitudes de servicio: creación, validación administrativa y activación técnica."
+                  icon={<ClipboardList className="h-16 w-16" />}
                 />
               </DashboardLayout>
             </ProtectedRoute>
