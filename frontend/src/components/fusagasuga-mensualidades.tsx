@@ -913,7 +913,7 @@ export function FusagasugaMensualidades({
                   Nueva Empresa
                 </Button>
               )}
-              {(userType === "soporte" || userType === "admin") && (
+              {(userType === "soporte" || userType === "admin" || userType === "facturacion") && (
                 <Button onClick={() => setImportarClientesOpen(true)}>
                   <Upload className="h-4 w-4 mr-2" />
                   Importar Clientes
